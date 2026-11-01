@@ -1,34 +1,202 @@
 {
-  "git init": { "summary": "今のフォルダを Git リポジトリにする（.git を作る）", "danger": "safe" },
-  "git config": { "summary": "名前・メールなどの設定を読み書きする", "danger": "safe" },
-  "git status": { "summary": "今の状態（ステージ済み・変更あり・未追跡）を表示する", "danger": "safe" },
-  "git add": { "summary": "変更をステージに載せる（次のコミットに入れる）", "danger": "safe" },
-  "git rm": { "summary": "ファイルを削除し、その削除をステージに載せる。--cached なら追跡だけやめる", "danger": "caution" },
-  "git commit": { "summary": "ステージの内容をスナップショットとして記録する", "danger": "safe" },
-  "git commit --amend": { "summary": "直前のコミットを作り直す（履歴を書き換える）", "danger": "caution" },
-  "git log": { "summary": "コミットの履歴を新しい順に表示する", "danger": "safe" },
-  "git diff": { "summary": "変更内容（差分）を表示する。--staged でステージ済みの差分", "danger": "safe" },
-  "git restore": { "summary": "ワークツリーの変更を捨てて元に戻す。捨てた変更は取り戻せない", "danger": "danger" },
-  "git restore --staged": { "summary": "ステージから外す（ワークツリーの内容は残る）", "danger": "safe" },
-  "git branch": { "summary": "ブランチの一覧・作成・削除", "danger": "safe" },
-  "git branch -d": { "summary": "マージ済みのブランチを削除する", "danger": "safe" },
-  "git branch -D": { "summary": "未マージでもブランチを強制削除する。コミットを見失う恐れ", "danger": "caution" },
-  "git switch": { "summary": "ブランチを移動する（-c で作って移動）", "danger": "safe" },
-  "git checkout": { "summary": "ブランチ移動やファイル復元を行う古いコマンド（今は switch / restore 推奨）", "danger": "caution" },
-  "git merge": { "summary": "他のブランチの変更を今のブランチに取り込む", "danger": "safe" },
-  "git merge --abort": { "summary": "コンフリクト中のマージを中止してマージ前に戻す", "danger": "safe" },
-  "git push": { "summary": "手元のコミットをリモートに送る（第4章）", "danger": "safe" },
-  "git push --force": { "summary": "リモートの履歴を上書きする。他人のコミットを消す恐れ", "danger": "danger" },
-  "git pull": { "summary": "リモートの変更を取得して取り込む（第4章）", "danger": "safe" },
-  "git reset --hard": { "summary": "コミット・ステージ・ワークツリーをまとめて巻き戻す。未コミットの変更は消える", "danger": "danger" },
-  "git reset": { "summary": "ブランチの位置やステージを巻き戻す（第6章）", "danger": "caution" },
-  "git revert": { "summary": "指定コミットを打ち消す新しいコミットを作る（第6章）", "danger": "safe" },
-  "git rebase": { "summary": "コミットを別の土台の上に付け替える。履歴が書き換わる（第6章）", "danger": "caution" },
-  "git stash": { "summary": "未コミットの変更を一時退避する（第6章）", "danger": "safe" },
-  "ls": { "summary": "ファイルの一覧を表示する（-a で隠しファイルも）", "danger": "safe" },
-  "cat": { "summary": "ファイルの中身を表示する", "danger": "safe" },
-  "echo": { "summary": "文字を表示する。> でファイルに書き込み、>> で追記", "danger": "safe" },
-  "touch": { "summary": "空のファイルを作る", "danger": "safe" },
-  "rm": { "summary": "ファイルを削除する（Git の外の操作）", "danger": "caution" },
-  "clear": { "summary": "ターミナルの表示を消す", "danger": "safe" }
+  "git init": {
+    "summary": "今のフォルダを Git リポジトリにする（.git を作る）",
+    "danger": "safe",
+    "category": "基本"
+  },
+  "git config": {
+    "summary": "名前・メールなどの設定を読み書きする",
+    "danger": "safe",
+    "category": "基本"
+  },
+  "git status": {
+    "summary": "今の状態（ステージ済み・変更あり・未追跡）を表示する",
+    "danger": "safe",
+    "category": "基本",
+    "detail": "迷ったらまず status。今いるブランチ、追跡先との差（ahead / behind）、ステージ済み・未ステージ・未追跡のファイルが分かります。`-s` で短い表示。"
+  },
+  "git add": {
+    "summary": "変更をステージに載せる（次のコミットに入れる）",
+    "danger": "safe",
+    "category": "基本",
+    "detail": "`git add <ファイル>` で指定ファイル、`git add .` で全部。削除したファイルも `add` すると「削除」がステージされます。コンフリクト解消後の `add` は「解消済み」の合図です。"
+  },
+  "git rm": {
+    "summary": "ファイルを削除し、その削除をステージに載せる。--cached なら追跡だけやめる",
+    "danger": "caution",
+    "category": "基本"
+  },
+  "git commit": {
+    "summary": "ステージの内容をスナップショットとして記録する",
+    "danger": "safe",
+    "category": "基本",
+    "detail": "`-m \"メッセージ\"` でメッセージを指定。`-a` を付けると追跡中ファイルの変更を自動で add します（未追跡ファイルは対象外）。マージ中は `-m` を省くと既定のメッセージになります。"
+  },
+  "git commit --amend": {
+    "summary": "直前のコミットを作り直す（履歴を書き換える）",
+    "danger": "caution",
+    "category": "基本"
+  },
+  "git log": {
+    "summary": "コミットの履歴を新しい順に表示する",
+    "danger": "safe",
+    "category": "基本"
+  },
+  "git diff": {
+    "summary": "変更内容（差分）を表示する。--staged でステージ済みの差分",
+    "danger": "safe",
+    "category": "基本"
+  },
+  "git restore": {
+    "summary": "ワークツリーの変更を捨てて元に戻す。捨てた変更は取り戻せない",
+    "danger": "danger",
+    "category": "基本",
+    "detail": "`git restore <ファイル>` はワークツリーの変更を捨てます。**コミットしていない変更は Git でも取り戻せない**ので、本当に捨ててよいか確認してから。"
+  },
+  "git restore --staged": {
+    "summary": "ステージから外す（ワークツリーの内容は残る）",
+    "danger": "safe",
+    "category": "基本",
+    "detail": "ステージから外すだけで、ファイルの中身は残ります。安全な操作です。"
+  },
+  "git branch": {
+    "summary": "ブランチの一覧・作成・削除",
+    "danger": "safe",
+    "category": "ブランチとマージ"
+  },
+  "git branch -d": {
+    "summary": "マージ済みのブランチを削除する",
+    "danger": "safe",
+    "category": "ブランチとマージ"
+  },
+  "git branch -D": {
+    "summary": "未マージでもブランチを強制削除する。コミットを見失う恐れ",
+    "danger": "caution",
+    "category": "ブランチとマージ",
+    "detail": "マージしていないブランチも消します。そのブランチにしかないコミットは、どこからも辿れなくなります（reflog で救出は可能）。"
+  },
+  "git switch": {
+    "summary": "ブランチを移動する（-c で作って移動）",
+    "danger": "safe",
+    "category": "ブランチとマージ",
+    "detail": "`git switch <ブランチ>` で移動、`-c` で作って移動、`--detach <コミット>` で detached HEAD。origin にだけあるブランチ名を指定すると、追跡ブランチを自動で作ります。"
+  },
+  "git checkout": {
+    "summary": "ブランチ移動やファイル復元を行う古いコマンド（今は switch / restore 推奨）",
+    "danger": "caution",
+    "category": "ブランチとマージ"
+  },
+  "git merge": {
+    "summary": "他のブランチの変更を今のブランチに取り込む",
+    "danger": "safe",
+    "category": "ブランチとマージ",
+    "detail": "今いるブランチに、指定したブランチを取り込みます。相手が自分の先にいるだけなら fast-forward、分岐していればマージコミット、同じ箇所を変えていればコンフリクト。"
+  },
+  "git merge --abort": {
+    "summary": "コンフリクト中のマージを中止してマージ前に戻す",
+    "danger": "safe",
+    "category": "ブランチとマージ",
+    "detail": "コンフリクト中に実行すると、マージ前の状態にそっくり戻ります。"
+  },
+  "git push": {
+    "summary": "手元のコミットをリモートに送る。他人の新しいコミットがあると rejected になる",
+    "danger": "safe",
+    "category": "リモート",
+    "detail": "追跡先が設定済みなら `git push` だけ。**rejected** になったら `git pull` してから再度 push。"
+  },
+  "git push --force": {
+    "summary": "リモートの履歴を上書きする。他人のコミットを消す恐れ",
+    "danger": "danger",
+    "category": "リモート",
+    "detail": "リモートの履歴を手元の内容で上書きします。他の人が push したコミットが消えるため、共有ブランチでは使わないこと。"
+  },
+  "git pull": {
+    "summary": "リモートの変更を取得して今のブランチに取り込む（fetch + merge）",
+    "danger": "safe",
+    "category": "リモート",
+    "detail": "`git fetch` ＋ `git merge origin/<追跡先>`。作業開始前と push 前に実行する習慣をつけましょう。"
+  },
+  "git reset --hard": {
+    "summary": "コミット・ステージ・ワークツリーをまとめて巻き戻す。未コミットの変更は消える",
+    "danger": "danger",
+    "category": "履歴の修正（第6章）",
+    "detail": "ステージとワークツリーまで巻き戻し、未コミットの変更は消えます。第6章で安全な使い方と復旧方法（reflog）を学びます。"
+  },
+  "git reset": {
+    "summary": "ブランチの位置やステージを巻き戻す（第6章）",
+    "danger": "caution",
+    "category": "履歴の修正（第6章）"
+  },
+  "git revert": {
+    "summary": "指定コミットを打ち消す新しいコミットを作る（第6章）",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）"
+  },
+  "git rebase": {
+    "summary": "コミットを別の土台の上に付け替える。履歴が書き換わる（第6章）",
+    "danger": "caution",
+    "category": "履歴の修正（第6章）"
+  },
+  "git stash": {
+    "summary": "未コミットの変更を一時退避する（第6章）",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）"
+  },
+  "ls": {
+    "summary": "ファイルの一覧を表示する（-a で隠しファイルも）",
+    "danger": "safe",
+    "category": "シェル"
+  },
+  "cat": {
+    "summary": "ファイルの中身を表示する",
+    "danger": "safe",
+    "category": "シェル"
+  },
+  "echo": {
+    "summary": "文字を表示する。> でファイルに書き込み、>> で追記",
+    "danger": "safe",
+    "category": "シェル"
+  },
+  "touch": {
+    "summary": "空のファイルを作る",
+    "danger": "safe",
+    "category": "シェル"
+  },
+  "rm": {
+    "summary": "ファイルを削除する（Git の外の操作）",
+    "danger": "caution",
+    "category": "シェル"
+  },
+  "clear": {
+    "summary": "ターミナルの表示を消す",
+    "danger": "safe",
+    "category": "シェル"
+  },
+  "git clone": {
+    "summary": "リモートのリポジトリを履歴ごと手元に複製する",
+    "danger": "safe",
+    "category": "リモート",
+    "detail": "`git clone <URL>` でリモートを複製し、origin の登録・追跡ブランチの設定まで自動で行います。"
+  },
+  "git remote": {
+    "summary": "リモート（origin など）の一覧・登録・削除",
+    "danger": "safe",
+    "category": "リモート"
+  },
+  "git fetch": {
+    "summary": "リモートの最新を取得して origin/* だけを更新する（作業中のファイルは変えない）",
+    "danger": "safe",
+    "category": "リモート",
+    "detail": "リモートを「見に行くだけ」。`origin/main` が進み、自分の `main` とファイルはそのまま。取り込む前に `git log origin/main` で中身を確認できます。"
+  },
+  "git push -u": {
+    "summary": "push と同時に追跡先（upstream）を設定する。新しいブランチの初回 push に使う",
+    "danger": "safe",
+    "category": "リモート"
+  },
+  "git branch -vv": {
+    "summary": "ブランチ一覧に、追跡先と ahead / behind を表示する",
+    "danger": "safe",
+    "category": "ブランチとマージ"
+  }
 }

@@ -7,7 +7,7 @@ export type GlossaryEntry = { term: string; short: string; related?: string[] };
 export const glossary = glossaryJson as Record<string, GlossaryEntry>;
 
 export type Danger = 'safe' | 'caution' | 'danger';
-export type CommandInfo = { summary: string; danger: Danger };
+export type CommandInfo = { summary: string; danger: Danger; category: string; detail?: string };
 export const commandInfo = commandsJson as Record<string, CommandInfo>;
 
 export const DANGER_LABEL: Record<Danger, { text: string; cls: string }> = {
