@@ -1,11 +1,12 @@
 import { fail, type CommandDef } from '../command';
 import { isAncestor, currentBranch, resolveRev } from '../model/refs';
 import type { RefUpdate } from '../model/types';
+import { runHook } from '../hooks';
 import { copyObjects, hostedRepo, refLine, remoteUrl, setUpstream, upstreamOf } from '../remote';
 
 export const push: CommandDef = {
   name: 'push',
-  spec: { short: { u: 'set-upstream', f: 'force', d: 'delete' }, long: ['force-with-lease', 'all'] },
+  spec: { short: { u: 'set-upstream', f: 'force', d: 'delete' }, long: ['force-with-lease', 'all', 'no-verify', 'tags'] },
   run(ctx) {
     const repo = ctx.repo;
     const { opts, positional } = ctx.args;
@@ -32,6 +33,8 @@ export const push: CommandDef = {
     const url = remoteUrl(repo, remoteName);
     const updates: RefUpdate[] = [];
 
+    if (!opts['no-verify'] && !runHook(ctx, 'pre-push', [remoteName, url]))
+      fail(`error: failed to push some refs to '${url}'`, 'pre-push フックが 0 以外で終わったので、push を中止しました。');
     // GitHub のブランチ保護（hosting 層の設定。origin だけが対象）
     const protection = remoteName === 'origin' ? ctx.world.hosting.protections.find((p) => p.branch === (opts.delete ? src : dst)) : undefined;
     const rejectProtected = (reason: string, ja: string) => {
