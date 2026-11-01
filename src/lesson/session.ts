@@ -1,11 +1,15 @@
 // レッスンの実行状態。UI 非依存の純粋関数で、ストアはこれを呼ぶだけにする。
 import { explainEvents } from '../engine/explain';
-import { execute } from '../engine/run';
+import { execute, runInDraft } from '../engine/run';
+import type { Ctx } from '../engine/command';
+import { pendingEditor, saveEditor } from '../engine/editor';
+import { applyHostingEvent } from '../hosting/events';
+import { GH } from '../hosting/gh';
 import { teammatePush } from '../engine/remote';
 import { createWorld, editFile } from '../engine/world';
 import type { CommandResult, GitEvent, Oid, World } from '../engine/model/types';
 import { evaluateAll, type CheckResult } from './checks';
-import type { Lesson, Step, TaskStep } from './types';
+import type { AnswerStep, Lesson, Step, TaskStep } from './types';
 
 /** 操作の再生（F-22）用の1コマ */
 export type Frame = { world: World; label: string };
@@ -35,7 +39,7 @@ export type Session = {
   seq: number;
 };
 
-/** ステップの開始時の出来事（同僚の push など）を起こす */
+/** ステップの開始時の出来事（同僚の push、GitHub 上の PR・レビューなど）を起こす */
 function enterStep(lesson: Lesson, s: Session): Session {
   const step: Step | undefined = lesson.steps[s.stepIndex];
   if (!step?.before?.length || s.done) return s;
@@ -43,15 +47,24 @@ function enterStep(lesson: Lesson, s: Session): Session {
   const aliases = { ...s.aliases };
   const events: GitEvent[] = [];
   const timeline = [...s.timeline];
+  const summaries: string[] = [];
   for (const e of step.before) {
-    const r = teammatePush(world, e);
-    world = r.world;
-    events.push(...r.events);
-    if (e.id) aliases[e.id] = r.oid;
-    timeline.push({ world, label: `（${e.author} さんが push）` });
+    if (e.type === 'teammatePush') {
+      const r = teammatePush(world, e);
+      world = r.world;
+      events.push(...r.events);
+      if (e.id) aliases[e.id] = r.oid;
+      timeline.push({ world, label: `（${e.author} さんが push）` });
+      summaries.push(`同僚の ${e.author} さんが ${e.remote ?? 'origin'} の ${e.branch ?? 'main'} に push しました（「${e.message}」）。まだあなたの手元には届いていません。`);
+    } else {
+      const r = applyHostingEvent(world, e);
+      world = r.world;
+      events.push(...r.events);
+      timeline.push({ world, label: `（${e.author} さん：GitHub）` });
+      summaries.push(r.summary);
+    }
   }
-  const summary = step.before.map((e) => `同僚の ${e.author} さんが ${e.remote ?? 'origin'} の ${e.branch ?? 'main'} に push しました（「${e.message}」）。まだあなたの手元には届いていません。`).join(' ');
-  return { ...s, world, aliases, timeline, lastEvents: events, summary, seq: s.seq + 1, undo: [...s.undo, s.world] };
+  return { ...s, world, aliases, timeline, lastEvents: events, summary: summaries.join(' '), seq: s.seq + 1, undo: [...s.undo, s.world] };
 }
 
 export function startSession(lesson: Lesson): Session {
@@ -117,14 +130,40 @@ function applyChange(lesson: Lesson, s: Session, world: World, events: GitEvent[
   return advance(lesson, next);
 }
 
+/** ターミナルで使える git 以外のコマンド（模擬 GitHub の gh） */
+export const PROGRAMS = { gh: GH };
+
 export function runCommand(lesson: Lesson, s: Session, line: string): { session: Session; result: CommandResult } {
-  const result = execute(s.world, line, { allowedCommands: lesson.allowedCommands });
+  const result = execute(s.world, line, { allowedCommands: lesson.allowedCommands, programs: PROGRAMS });
   return { session: applyChange(lesson, s, result.world, result.events, line.trim(), line.trim()), result };
 }
 
 export function saveFile(lesson: Lesson, s: Session, path: string, content: string | null): Session {
   const { world, events } = editFile(s.world, path, content);
   return applyChange(lesson, s, world, events, content === null ? `（エディタで ${path} を削除）` : `（エディタで ${path} を保存）`);
+}
+
+/** エディタで保存する。git がそのファイルの保存を待っていれば（rebase -i の todo など）、git に渡して続きを進める */
+export function saveEditorFile(lesson: Lesson, s: Session, path: string, content: string): { session: Session; result: CommandResult | null } {
+  const ed = pendingEditor(s.world);
+  if (ed?.path !== path) return { session: saveFile(lesson, s, path, content), result: null };
+  const result = saveEditor(s.world, path, content);
+  if (!result.ok) return { session: s, result };
+  return { session: applyChange(lesson, s, result.world, result.events, `（エディタで ${path.split('/').pop()} を保存）`), result };
+}
+
+/** GitHub 画面のボタンなど、コマンド以外の操作（ctx を受け取ってエンジン・hosting の関数を呼ぶ） */
+export function runAction(lesson: Lesson, s: Session, label: string, fn: (ctx: Ctx) => void): { session: Session; result: CommandResult } {
+  const result = runInDraft(s.world, fn);
+  if (!result.ok) return { session: s, result };
+  return { session: applyChange(lesson, s, result.world, result.events, label), result };
+}
+
+/** 模範解答の1手を実行する（自動テストと「答えを見る」から使う） */
+export function runAnswer(lesson: Lesson, s: Session, a: AnswerStep): { session: Session; result: CommandResult } {
+  if (typeof a === 'string') return runCommand(lesson, s, a);
+  const r = saveEditorFile(lesson, s, a.edit, a.content);
+  return { session: r.session, result: r.result ?? { world: r.session.world, output: [], events: [], ok: true } };
 }
 
 /** フリープレイの「同僚が push」ボタンなど、レッスン外から起こす出来事 */

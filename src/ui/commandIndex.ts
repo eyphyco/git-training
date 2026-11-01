@@ -3,7 +3,7 @@ import { commandMatches } from '../lesson/checks';
 import type { Lesson } from '../lesson/types';
 
 export function relatedLessons(command: string, all: Lesson[]): Lesson[] {
-  return all.filter((l) => l.steps.some((s) => (!s.type || s.type === 'task') && 'answer' in s && s.answer?.some((a) => commandMatches(a, command))));
+  return all.filter((l) => l.steps.some((s) => (!s.type || s.type === 'task') && 'answer' in s && s.answer?.some((a) => typeof a === 'string' && commandMatches(a, command))));
 }
 
 export function searchCommands<T extends { summary: string; detail?: string }>(entries: [string, T][], q: string): [string, T][] {

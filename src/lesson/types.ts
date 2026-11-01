@@ -1,5 +1,6 @@
 // レッスン定義（content/lessons/**/*.json）の型。設計書 §7 に quiz ステップを足したもの。
 import type { Setup, SetupCommit } from '../engine/world';
+import type { HostingEvent } from '../hosting/events';
 
 export type Area = 'worktree' | 'index' | 'head';
 
@@ -20,7 +21,12 @@ export type Check =
   | { type: 'commandNotUsed'; command: string }
   | { type: 'remoteEquals'; ref: string; remote?: string; to?: string }
   | { type: 'aheadBehind'; branch?: string; ahead: number; behind: number }
-  | { type: 'prState'; state: string };
+  | { type: 'prState'; pr?: number; head?: string; state?: 'open' | 'merged' | 'closed'; method?: 'merge' | 'squash' | 'rebase'; approvedBy?: string; reviewedBy?: string; exists?: boolean }
+  | { type: 'issueState'; number: number; state: 'open' | 'closed' }
+  | { type: 'protection'; branch: string; requirePullRequest?: boolean; requiredApprovals?: number; requireStatusChecks?: boolean }
+  | { type: 'stashCount'; count: number }
+  | { type: 'inProgress'; op: 'merge' | 'rebase' | 'cherry-pick' | 'revert' | null }
+  | { type: 'tagExists'; name: string; annotated?: boolean; at?: string };
 
 /** お手本のグラフ。メッセージでコミットを識別し、形（親子関係）とブランチ位置を比べる */
 export type GraphShape = {
@@ -29,15 +35,18 @@ export type GraphShape = {
   head?: string;
 };
 
-/** ステップの開始時に起きる出来事（同僚の push など） */
-export type LessonEvent = { type: 'teammatePush'; id?: string; author: string; remote?: string; branch?: string; message: string; files: Record<string, string | null> };
+/** ステップの開始時に起きる出来事（同僚の push、GitHub 上の PR・レビューなど） */
+export type LessonEvent = { type: 'teammatePush'; id?: string; author: string; remote?: string; branch?: string; from?: string; message: string; files: Record<string, string | null> } | HostingEvent;
+
+/** 模範解答の1手。文字列はターミナルの入力、edit はエディタで保存する操作（rebase -i の todo など） */
+export type AnswerStep = string | { edit: string; content: string };
 
 export type TaskStep = {
   type?: 'task';
   before?: LessonEvent[];
   instruction: string;
   hints?: string[];
-  answer?: string[];
+  answer?: AnswerStep[];
   check: Check[];
   explain?: string;
   /** 模範解答がわざとエラーになるステップ（エラーを見せる課題） */

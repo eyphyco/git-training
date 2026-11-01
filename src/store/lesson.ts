@@ -22,6 +22,8 @@ type Store = {
   save(path: string, content: string | null): void;
   answer(choice: number): boolean;
   toggleCheck(item: number): void;
+  /** GitHub 画面のボタンなど、コマンド以外の操作。失敗したら false（理由はターミナルに出る） */
+  action(label: string, fn: (ctx: import('../engine/command').Ctx) => void): boolean;
   /** フリープレイなどレッスン外の出来事（同僚の push）を反映する */
   apply(world: World, events: import('../engine/model/types').GitEvent[], label: string, summary: string): void;
   undo(): void;
@@ -92,6 +94,15 @@ export const useLesson = create<Store>((set, get) => {
     save(path, content) {
       const { lesson, session, lines } = get();
       if (!lesson || !session) return;
+      // git がエディタの保存を待っている（rebase -i の todo など）なら、結果をターミナルに出す
+      if (content !== null) {
+        const { session: next, result } = S.saveEditorFile(lesson, session, path, content);
+        if (result) {
+          set({ lines: [...lines, line('info', `（エディタ）${path.split('/').pop()} を保存しました`, 'dim'), ...result.output.map((o) => line('out', o.text, o.tone))].slice(-1000) });
+          if (result.ok) commit(next);
+          return;
+        }
+      }
       const next = S.saveFile(lesson, session, path, content);
       if (next.world === session.world) return;
       set({ lines: [...lines, line('info', content === null ? `（エディタ）${path} を削除しました` : `（エディタ）${path} を保存しました`, 'dim')] });
@@ -108,6 +119,14 @@ export const useLesson = create<Store>((set, get) => {
       const { lesson, session } = get();
       if (!lesson || !session) return;
       commit(S.toggleCheck(lesson, session, item));
+    },
+    action(label, fn) {
+      const { lesson, session, lines } = get();
+      if (!lesson || !session) return false;
+      const { session: next, result } = S.runAction(lesson, session, label, fn);
+      set({ lines: [...lines, line('info', label, 'dim'), ...result.output.map((o) => line('out', o.text, o.tone))].slice(-1000) });
+      if (result.ok) commit(next);
+      return result.ok;
     },
     apply(world, events, label, summary) {
       const { lesson, session, lines } = get();
