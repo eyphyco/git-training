@@ -1,0 +1,38 @@
+{
+  "id": "ch03-challenge",
+  "title": "章末チャレンジ：コンフリクト3箇所を正しく解消",
+  "level": "intermediate",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "title.txt": "My Blog\n", "color.css": "h1 { color: black; }\n", "footer.txt": "(c) 2025\n" } },
+      { "id": "c2", "parent": "c1", "msg": "rebrand", "files": { "title.txt": "Tech Blog\n", "color.css": "h1 { color: navy; }\n", "footer.txt": "(c) 2026\n" } },
+      { "id": "c3", "parent": "c1", "msg": "redesign", "files": { "title.txt": "My Dev Blog\n", "color.css": "h1 { color: teal; }\n", "footer.txt": "(c) 2025 You\n" } }
+    ],
+    "branches": { "main": "c2", "redesign": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "redesign を main にマージし、3つのコンフリクトを次の内容で解消してマージを完了しよう。\n・title.txt → Tech Blog（main を採用）\n・color.css → h1 { color: teal; }（redesign を採用）\n・footer.txt → (c) 2026 You（両方を混ぜる）",
+      "hints": ["git merge redesign でコンフリクトを起こす", "3ファイルとも直したら git add . でまとめて解消済みに", "最後に git commit"],
+      "answer": [
+        "git merge redesign",
+        "echo \"Tech Blog\" > title.txt",
+        "echo \"h1 { color: teal; }\" > color.css",
+        "echo \"(c) 2026 You\" > footer.txt",
+        "git add .",
+        "git commit"
+      ],
+      "check": [
+        { "type": "hasMergeCommit", "ref": "main" },
+        { "type": "fileContent", "path": "title.txt", "area": "head", "equals": "Tech Blog\n" },
+        { "type": "fileContent", "path": "color.css", "area": "head", "equals": "h1 { color: teal; }\n" },
+        { "type": "fileContent", "path": "footer.txt", "area": "head", "equals": "(c) 2026 You\n" },
+        { "type": "statusClean" }
+      ],
+      "explain": "クリア！「片方を採用」「もう片方を採用」「両方を混ぜる」の3パターンを解消できました。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "merge", "add", "commit", "restore"]
+}

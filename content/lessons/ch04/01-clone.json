@@ -1,0 +1,46 @@
+{
+  "id": "ch04-01",
+  "title": "clone でリモートを手元に複製する",
+  "level": "intermediate",
+  "doc": "01-clone.md",
+  "setup": {
+    "initialized": false,
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add index", "files": { "index.html": "<h1>Team App</h1>\n" } },
+      { "id": "c3", "parent": "c2", "msg": "wip: search", "files": { "search.js": "// TODO\n" } }
+    ],
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c2", "feature/search": "c3" } } }
+  },
+  "steps": [
+    {
+      "instruction": "GitHub にあるチームのリポジトリ https://github.com/team/app.git を clone しよう。",
+      "hints": ["git clone <URL>", "git clone https://github.com/team/app.git"],
+      "answer": ["git clone https://github.com/team/app.git"],
+      "check": [{ "type": "repoInitialized" }, { "type": "refEquals", "ref": "main", "to": "c2" }],
+      "explain": "履歴まるごとが手元に来ました。グラフに main と並んで origin/main・origin/feature/search（点線のラベル）が出ています。"
+    },
+    {
+      "instruction": "git remote -v で、どこから clone したかを確認しよう。",
+      "hints": ["git remote -v"],
+      "answer": ["git remote -v"],
+      "check": [{ "type": "commandUsed", "command": "git remote" }],
+      "explain": "clone 元は自動で origin という名前で登録されます。"
+    },
+    {
+      "instruction": "git branch -a で、リモートのブランチも含めて一覧しよう。",
+      "hints": ["-a は all（全部）", "git branch -a"],
+      "answer": ["git branch -a"],
+      "check": [{ "type": "commandUsed", "command": "git branch -a" }],
+      "explain": "remotes/origin/... は「最後に確認したときのリモートの位置」の記録（リモート追跡ブランチ）です。直接コミットはできません。"
+    },
+    {
+      "instruction": "feature/search ブランチで作業したい。git switch feature/search で移動しよう。",
+      "hints": ["ローカルにはまだ feature/search がありませんが、origin/feature/search があれば自動で作られます", "git switch feature/search"],
+      "answer": ["git switch feature/search"],
+      "check": [{ "type": "headOn", "branch": "feature/search" }],
+      "explain": "「set up to track 'origin/feature/search'」＝ origin/feature/search を追跡するローカルブランチが作られました。"
+    }
+  ],
+  "allowedCommands": ["clone", "remote", "status", "log", "branch", "switch", "fetch"]
+}

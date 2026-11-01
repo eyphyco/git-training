@@ -2,7 +2,7 @@ import { fail, type CommandDef } from '../command';
 import { getCommit, short, subject } from '../model/objects';
 import { currentBranch, resolveRev } from '../model/refs';
 import { restorePaths } from './restore';
-import { createBranchAndSwitch, moveHead } from './switch';
+import { createBranchAndSwitch, dwimTrackingBranch, moveHead } from './switch';
 
 const MODERN = 'ヒント: 今の Git では、ブランチの移動は git switch、ファイルの取り消しは git restore に分かれています。';
 
@@ -33,6 +33,7 @@ export const checkout: CommandDef = {
       ctx.hint(MODERN);
       return;
     }
+    if (!repo.refs.heads[name] && !opts.detach && dwimTrackingBranch(ctx, name, 'checkout')) return;
     const oid = resolveRev(repo, name);
     if (oid) {
       moveHead(ctx, { detach: oid }, 'checkout');

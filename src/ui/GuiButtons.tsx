@@ -5,7 +5,7 @@ import type { RepoState } from '../engine/model/types';
 
 type Props = { repo: RepoState; onCommand(cmd: string): void };
 
-const btn = 'rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs hover:border-sky-500 hover:bg-sky-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-sky-950';
+const btn = 'rounded-lg border border-white/15 bg-white/10 px-2 py-1 font-mono text-xs text-slate-100 backdrop-blur-md transition hover:bg-white/25 disabled:opacity-40 [&>option]:text-slate-800';
 
 const q = (s: string) => `"${s.replace(/(["\\])/g, '\\$1')}"`;
 
@@ -15,7 +15,7 @@ export function GuiButtons({ repo, onCommand }: Props) {
   const others = Object.keys(repo.refs.heads).filter((b) => b !== currentBranch(repo)).sort();
   const ready = repo.initialized;
   return (
-    <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-200 bg-slate-100 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900" aria-label="GUI 操作">
+    <div className="flex flex-wrap items-center gap-1.5 border-t border-white/10 bg-white/5 px-2 py-1.5" aria-label="GUI 操作">
       {!ready && (
         <button type="button" className={btn} onClick={() => onCommand('git init')}>
           git init
@@ -36,7 +36,7 @@ export function GuiButtons({ repo, onCommand }: Props) {
           setMessage('');
         }}
       >
-        <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="コミットメッセージ" className="w-32 rounded border border-slate-300 bg-white px-1 text-xs dark:border-slate-700 dark:bg-slate-950" />
+        <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="コミットメッセージ" className="w-32 rounded-lg border border-white/15 bg-white/10 px-1.5 text-xs text-slate-100 outline-none placeholder:text-slate-400" />
         <button type="submit" className={btn} disabled={!ready || !message.trim()}>
           commit
         </button>
@@ -56,7 +56,7 @@ export function GuiButtons({ repo, onCommand }: Props) {
           setBranchName('');
         }}
       >
-        <input value={branchName} onChange={(e) => setBranchName(e.target.value)} placeholder="ブランチ名" className="w-24 rounded border border-slate-300 bg-white px-1 text-xs dark:border-slate-700 dark:bg-slate-950" />
+        <input value={branchName} onChange={(e) => setBranchName(e.target.value)} placeholder="ブランチ名" className="w-24 rounded-lg border border-white/15 bg-white/10 px-1.5 text-xs text-slate-100 outline-none placeholder:text-slate-400" />
         <button type="submit" className={btn} disabled={!ready || !branchName.trim()}>
           branch
         </button>

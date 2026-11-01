@@ -48,7 +48,13 @@ export type RepoState = {
   reflog: ReflogEntry[];
   stash: StashEntry[];
   inProgress?: InProgress;
-  config: { user: { name: string; email: string } };
+  config: {
+    user: { name: string; email: string };
+    /** git remote add で登録したリモート（名前 → URL） */
+    remotes?: Record<string, { url: string }>;
+    /** 追跡ブランチの設定（ローカルブランチ → リモート名とブランチ名） */
+    branches?: Record<string, { remote: string; merge: string }>;
+  };
 };
 
 export type PullRequest = { id: number; title: string; head: string; base: string; state: 'open' | 'merged' | 'closed' };
@@ -60,6 +66,8 @@ export type World = {
   hosting: { pullRequests: PullRequest[]; protections: BranchProtection[] };
   clock: number; // 決定的な時刻（UNIX 秒）。コミットごとに進む
 };
+
+export type RefUpdate = { ref: string; from: Oid | null; to: Oid | null; forced?: boolean };
 
 export type FileChange = 'added' | 'modified' | 'deleted';
 
@@ -81,6 +89,13 @@ export type GitEvent =
   | { type: 'CONFLICT'; paths: Path[]; theirs: string }
   | { type: 'MERGE_ABORTED' }
   | { type: 'CONFIG_SET'; key: string; value: string }
+  | { type: 'REMOTE_ADDED'; name: string; url: string }
+  | { type: 'CLONED'; url: string; branch: string | null }
+  | { type: 'FETCHED'; remote: string; updates: RefUpdate[] }
+  | { type: 'PUSHED'; remote: string; updates: RefUpdate[] }
+  | { type: 'PUSH_REJECTED'; remote: string; branch: string; reason: 'fetch first' | 'non-fast-forward' }
+  | { type: 'UPSTREAM_SET'; branch: string; upstream: string }
+  | { type: 'TEAMMATE_PUSHED'; author: string; remote: string; branch: string; oid: Oid }
   | { type: 'CLEAR' };
 
 export type Tone = 'normal' | 'green' | 'red' | 'yellow' | 'cyan' | 'dim' | 'error' | 'hint';

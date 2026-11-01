@@ -3,12 +3,17 @@ import type { CommandDef } from './command';
 import { add } from './commands/add';
 import { branch } from './commands/branch';
 import { checkout } from './commands/checkout';
+import { clone } from './commands/clone';
 import { commit } from './commands/commit';
 import { config } from './commands/config';
 import { diff } from './commands/diff';
+import { fetch } from './commands/fetch';
 import { init } from './commands/init';
 import { log } from './commands/log';
 import { merge } from './commands/merge';
+import { pull } from './commands/pull';
+import { push } from './commands/push';
+import { remote } from './commands/remote';
 import { restore } from './commands/restore';
 import { rm } from './commands/rm';
 import { status } from './commands/status';
@@ -28,15 +33,15 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   switch: switchCmd,
   checkout,
   merge,
+  clone,
+  remote,
+  fetch,
+  pull,
+  push,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
-  clone: '第4章',
-  remote: '第4章',
-  fetch: '第4章',
-  pull: '第4章',
-  push: '第4章',
   revert: '第6章',
   reset: '第6章',
   stash: '第6章',

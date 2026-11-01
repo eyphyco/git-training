@@ -1,0 +1,42 @@
+{
+  "id": "ch04-02",
+  "title": "push でリモートに送る",
+  "level": "intermediate",
+  "doc": "02-push.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "instruction": "about.html を作ってコミットしよう（メッセージ「add about page」）。",
+      "hints": ["echo \"<h1>About</h1>\" > about.html", "git add about.html → git commit -m \"add about page\""],
+      "answer": ["echo \"<h1>About</h1>\" > about.html", "git add about.html", "git commit -m \"add about page\""],
+      "check": [{ "type": "aheadBehind", "branch": "main", "ahead": 1, "behind": 0 }],
+      "explain": "グラフで main が origin/main より1つ先に進みました。まだ GitHub には届いていません。"
+    },
+    {
+      "instruction": "git status を見てみよう。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "explain": "「Your branch is ahead of 'origin/main' by 1 commit.」＝ push していないコミットが1つある、という意味です。"
+    },
+    {
+      "instruction": "git push で GitHub に送ろう。",
+      "hints": ["追跡先が設定済みなので引数なしで OK", "git push"],
+      "answer": ["git push"],
+      "check": [{ "type": "remoteEquals", "ref": "main" }],
+      "explain": "リモート列の main が進み、グラフの origin/main も main に追いつきました。"
+    },
+    {
+      "instruction": "新しいブランチ feature/contact を作ってコミットし、git push -u origin feature/contact で初めて push しよう。",
+      "hints": ["git switch -c feature/contact → ファイルを作って add / commit", "初回は -u で追跡先も設定します", "git push -u origin feature/contact"],
+      "answer": ["git switch -c feature/contact", "echo \"<form></form>\" > contact.html", "git add contact.html", "git commit -m \"add contact form\"", "git push -u origin feature/contact"],
+      "check": [{ "type": "remoteEquals", "ref": "feature/contact" }, { "type": "aheadBehind", "branch": "feature/contact", "ahead": 0, "behind": 0 }],
+      "explain": "-u（--set-upstream）を付けると、次からは git push / git pull だけで済みます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "remote"]
+}

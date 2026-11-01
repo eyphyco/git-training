@@ -1,4 +1,4 @@
-import { fail, type CommandDef } from '../command';
+import { fail, type CommandDef, type Ctx } from '../command';
 import { mergeText } from '../merge/merge3';
 import { commitFiles, getBlob, short, writeBlob } from '../model/objects';
 import { currentBranch, headOid, isAncestor, mergeBase, resolveRev, setBranch, logRef } from '../model/refs';
@@ -43,87 +43,107 @@ export const merge: CommandDef = {
     if (!name) fail('fatal: No remote for the current branch.', '取り込みたいブランチ名を指定してください（例: git merge feature）');
     const theirs = resolveRev(repo, name);
     if (!theirs) fail(`merge: ${name} - not something we can merge`, `「${name}」というブランチやコミットはありません。git branch で確認しましょう。`);
-    const ours = headOid(repo);
-    const branch = currentBranch(repo);
-    if (!ours) fail('fatal: このサイトでは、コミットのないブランチへのマージは未対応です。', '先に1つコミットを作ってからマージしましょう。');
-
-    if (isAncestor(repo, theirs, ours)) {
-      ctx.out('Already up to date.');
-      return;
-    }
-    const oursFiles = commitFiles(repo, ours);
-    const theirsFiles = commitFiles(repo, theirs);
-
-    // fast-forward：今のブランチを相手の位置まで進めるだけ
-    if (isAncestor(repo, ours, theirs) && !opts['no-ff']) {
-      checkoutTree(repo, oursFiles, theirsFiles, 'merge');
-      ctx.out(`Updating ${short(ours)}..${short(theirs)}`);
-      ctx.out('Fast-forward');
-      if (branch) setBranch(repo, branch, theirs, `merge ${name}: Fast-forward`, ctx.world.clock);
-      else {
-        repo.head = { type: 'detached', oid: theirs };
-        logRef(repo, 'HEAD', ours, theirs, `merge ${name}: Fast-forward`, ctx.world.clock);
-      }
-      printSummary(ctx, treeDiffStat(repo, oursFiles, theirsFiles), true);
-      ctx.emit({ type: 'MERGE_FAST_FORWARD', branch: branch ?? 'HEAD', from: ours, to: theirs });
-      ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: ours, to: theirs, reason: 'fast-forward' });
-      return;
-    }
-    if (opts['ff-only']) fail('hint: Diverging branches can\'t be fast-forwarded, you need to either:\nhint:\nhint: \tgit merge --no-ff\nhint:\nhint: or:\nhint:\nhint: \tgit rebase\nhint:\nfatal: Not possible to fast-forward, aborting.', '両方のブランチに新しいコミットがあるため fast-forward できません。');
-
-    // 3-way マージ（ファイル単位で判定し、両方が変えたファイルだけ行単位で diff3）
-    const base = mergeBase(repo, ours, theirs);
-    const baseFiles = commitFiles(repo, base);
-    const result: Record<Path, Oid> = {};
-    const conflictText: Record<Path, string> = {};
-    const conflicts: Path[] = [];
-    const lines: string[] = [];
-    for (const p of [...new Set([...Object.keys(baseFiles), ...Object.keys(oursFiles), ...Object.keys(theirsFiles)])].sort()) {
-      const [b, o, t] = [baseFiles[p], oursFiles[p], theirsFiles[p]];
-      if (o === t || b === t) {
-        if (o) result[p] = o;
-      } else if (b === o) {
-        if (t) result[p] = t;
-      } else if (!o || !t) {
-        conflicts.push(p);
-        lines.push(`CONFLICT (modify/delete): ${p} deleted in ${o ? name : 'HEAD'} and modified in ${o ? 'HEAD' : name}.  Version ${o ? 'HEAD' : name} of ${p} left in tree.`);
-        result[p] = (o ?? t)!;
-      } else {
-        lines.push(`Auto-merging ${p}`);
-        const m = mergeText(getBlob(repo, o), b ? getBlob(repo, b) : '', getBlob(repo, t), { ours: 'HEAD', theirs: name });
-        if (m.conflict) {
-          conflicts.push(p);
-          conflictText[p] = m.text;
-          lines.push(`CONFLICT (${b ? 'content' : 'add/add'}): Merge conflict in ${p}`);
-          result[p] = o;
-        } else result[p] = writeBlob(repo, m.text);
-      }
-    }
-    const message = (opts.message as string[] | undefined)?.length
-      ? cleanupMessage(opts.message as string[])
-      : `Merge branch '${name}'${branch && !['main', 'master'].includes(branch) ? ` into ${branch}` : ''}`;
-
-    // 影響するファイルにローカル変更があれば中断（実 Git と同じく作業を守る）
-    const target: Record<Path, string> = { ...result };
-    for (const p of conflicts) target[p] = `conflict:${p}`; // マーカーを書き込むので必ず「変わる」扱い
-    const bad = findOverwrites(repo, oursFiles, target);
-    if (!bad.length) bad.push(...computeStatus(repo).staged.map((s) => s.path));
-    if (bad.length)
-      fail(`error: Your local changes to the following files would be overwritten by merge:\n${bad.map((p) => `\t${p}`).join('\n')}\nPlease commit your changes or stash them before you merge.\nAborting`, 'マージで書き換わるファイルか、ステージに未コミットの変更があります。先にコミットしましょう。');
-
-    const affected = applyTree(repo, oursFiles, result);
-    for (const l of lines) ctx.out(l, l.startsWith('CONFLICT') ? 'red' : 'normal');
-    if (conflicts.length) {
-      for (const p of conflicts) if (conflictText[p] !== undefined) repo.workingTree[p] = conflictText[p];
-      repo.inProgress = { op: 'merge', theirs, theirsName: name, message, conflicts, affected: [...new Set([...affected, ...conflicts])] };
-      ctx.out('Automatic merge failed; fix conflicts and then commit the result.');
-      ctx.hint(`コンフリクト（衝突）が起きました。${conflicts.join(', ')} の <<<<<<< 〜 >>>>>>> の部分を直して git add → git commit します。やめるなら git merge --abort。`);
-      ctx.emit({ type: 'CONFLICT', paths: conflicts, theirs: name });
-      return;
-    }
-    const oid = commitIndex(ctx, message, [ours, theirs], `merge ${name}`);
-    ctx.out("Merge made by the 'ort' strategy.");
-    printSummary(ctx, treeDiffStat(repo, oursFiles, commitFiles(repo, oid)), true);
-    ctx.emit({ type: 'MERGE_COMMIT', oid, theirs: name });
+    mergeInto(ctx, theirs, name, {
+      noFf: !!opts['no-ff'],
+      ffOnly: !!opts['ff-only'],
+      messages: opts.message as string[] | undefined,
+    });
   },
 };
+
+export type MergeOptions = {
+  noFf?: boolean;
+  ffOnly?: boolean;
+  messages?: string[];
+  /** 既定のマージコミットメッセージ（git pull では "Merge branch 'main' of <url>"） */
+  defaultMessage?: string;
+  /** 衝突マーカー >>>>>>> の後ろに付く名前 */
+  label?: string;
+};
+
+/** 今の HEAD に theirs を取り込む（merge と pull の共通処理） */
+export function mergeInto(ctx: Ctx, theirs: Oid, name: string, mo: MergeOptions) {
+  const repo = ctx.repo;
+  const ours = headOid(repo);
+  const branch = currentBranch(repo);
+  if (!ours) fail('fatal: このサイトでは、コミットのないブランチへのマージは未対応です。', '先に1つコミットを作ってからマージしましょう。');
+
+  if (isAncestor(repo, theirs, ours)) {
+    ctx.out('Already up to date.');
+    return;
+  }
+  const oursFiles = commitFiles(repo, ours);
+  const theirsFiles = commitFiles(repo, theirs);
+
+  // fast-forward：今のブランチを相手の位置まで進めるだけ
+  if (isAncestor(repo, ours, theirs) && !mo.noFf) {
+    checkoutTree(repo, oursFiles, theirsFiles, 'merge');
+    ctx.out(`Updating ${short(ours)}..${short(theirs)}`);
+    ctx.out('Fast-forward');
+    if (branch) setBranch(repo, branch, theirs, `merge ${name}: Fast-forward`, ctx.world.clock);
+    else {
+      repo.head = { type: 'detached', oid: theirs };
+      logRef(repo, 'HEAD', ours, theirs, `merge ${name}: Fast-forward`, ctx.world.clock);
+    }
+    printSummary(ctx, treeDiffStat(repo, oursFiles, theirsFiles), true);
+    ctx.emit({ type: 'MERGE_FAST_FORWARD', branch: branch ?? 'HEAD', from: ours, to: theirs });
+    ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: ours, to: theirs, reason: 'fast-forward' });
+    return;
+  }
+  if (mo.ffOnly) fail('hint: Diverging branches can\'t be fast-forwarded, you need to either:\nhint:\nhint: \tgit merge --no-ff\nhint:\nhint: or:\nhint:\nhint: \tgit rebase\nhint:\nfatal: Not possible to fast-forward, aborting.', '両方のブランチに新しいコミットがあるため fast-forward できません。');
+
+  // 3-way マージ（ファイル単位で判定し、両方が変えたファイルだけ行単位で diff3）
+  const base = mergeBase(repo, ours, theirs);
+  const baseFiles = commitFiles(repo, base);
+  const result: Record<Path, Oid> = {};
+  const conflictText: Record<Path, string> = {};
+  const conflicts: Path[] = [];
+  const lines: string[] = [];
+  for (const p of [...new Set([...Object.keys(baseFiles), ...Object.keys(oursFiles), ...Object.keys(theirsFiles)])].sort()) {
+    const [b, o, t] = [baseFiles[p], oursFiles[p], theirsFiles[p]];
+    if (o === t || b === t) {
+      if (o) result[p] = o;
+    } else if (b === o) {
+      if (t) result[p] = t;
+    } else if (!o || !t) {
+      conflicts.push(p);
+      lines.push(`CONFLICT (modify/delete): ${p} deleted in ${o ? name : 'HEAD'} and modified in ${o ? 'HEAD' : name}.  Version ${o ? 'HEAD' : name} of ${p} left in tree.`);
+      result[p] = (o ?? t)!;
+    } else {
+      lines.push(`Auto-merging ${p}`);
+      const m = mergeText(getBlob(repo, o), b ? getBlob(repo, b) : '', getBlob(repo, t), { ours: 'HEAD', theirs: mo.label ?? name });
+      if (m.conflict) {
+        conflicts.push(p);
+        conflictText[p] = m.text;
+        lines.push(`CONFLICT (${b ? 'content' : 'add/add'}): Merge conflict in ${p}`);
+        result[p] = o;
+      } else result[p] = writeBlob(repo, m.text);
+    }
+  }
+  const message = mo.messages?.length
+    ? cleanupMessage(mo.messages)
+    : (mo.defaultMessage ?? `Merge branch '${name}'`) + (branch && !['main', 'master'].includes(branch) ? ` into ${branch}` : '');
+
+  // 影響するファイルにローカル変更があれば中断（実 Git と同じく作業を守る）
+  const target: Record<Path, string> = { ...result };
+  for (const p of conflicts) target[p] = `conflict:${p}`; // マーカーを書き込むので必ず「変わる」扱い
+  const bad = findOverwrites(repo, oursFiles, target);
+  if (!bad.length) bad.push(...computeStatus(repo).staged.map((s) => s.path));
+  if (bad.length)
+    fail(`error: Your local changes to the following files would be overwritten by merge:\n${bad.map((p) => `\t${p}`).join('\n')}\nPlease commit your changes or stash them before you merge.\nAborting`, 'マージで書き換わるファイルか、ステージに未コミットの変更があります。先にコミットしましょう。');
+
+  const affected = applyTree(repo, oursFiles, result);
+  for (const l of lines) ctx.out(l, l.startsWith('CONFLICT') ? 'red' : 'normal');
+  if (conflicts.length) {
+    for (const p of conflicts) if (conflictText[p] !== undefined) repo.workingTree[p] = conflictText[p];
+    repo.inProgress = { op: 'merge', theirs, theirsName: name, message, conflicts, affected: [...new Set([...affected, ...conflicts])] };
+    ctx.out('Automatic merge failed; fix conflicts and then commit the result.');
+    ctx.hint(`コンフリクト（衝突）が起きました。${conflicts.join(', ')} の <<<<<<< 〜 >>>>>>> の部分を直して git add → git commit します。やめるなら git merge --abort。`);
+    ctx.emit({ type: 'CONFLICT', paths: conflicts, theirs: name });
+    return;
+  }
+  const oid = commitIndex(ctx, message, [ours, theirs], `merge ${name}`);
+  ctx.out("Merge made by the 'ort' strategy.");
+  printSummary(ctx, treeDiffStat(repo, oursFiles, commitFiles(repo, oid)), true);
+  ctx.emit({ type: 'MERGE_COMMIT', oid, theirs: name });
+}

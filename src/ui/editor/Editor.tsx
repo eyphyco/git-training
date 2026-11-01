@@ -3,6 +3,7 @@ import MonacoEditor, { type OnMount } from '@monaco-editor/react';
 import { useEffect, useRef, useState } from 'react';
 import type { RepoState } from '../../engine/model/types';
 import { useProgress } from '../../store/progress';
+import { hasConflict, resolveConflicts } from './conflict';
 import { languageOf, monaco } from './monaco';
 
 type Props = { repo: RepoState; path: string | null; onSelect(path: string | null): void; onSave(path: string, content: string | null): void };
@@ -63,31 +64,31 @@ export default function Editor({ repo, path, onSelect, onSave }: Props) {
   return (
     <div className="flex h-full min-h-0">
       <style>{`.conflict-ours{background:rgba(34,197,94,.18)}.conflict-theirs{background:rgba(59,130,246,.18)}.conflict-marker{background:rgba(234,88,12,.3)}`}</style>
-      <aside className="flex w-40 shrink-0 flex-col border-r border-slate-200 text-xs dark:border-slate-800">
+      <aside className="flex w-40 shrink-0 flex-col border-r border-white/40 text-xs dark:border-white/10">
         <ul className="flex-1 overflow-y-auto">
           {files.map((f) => (
             <li key={f}>
-              <button type="button" onClick={() => onSelect(f)} className={`block w-full truncate px-2 py-1 text-left font-mono ${f === path ? 'bg-sky-100 font-bold dark:bg-sky-900' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              <button type="button" onClick={() => onSelect(f)} className={`block w-full truncate px-2 py-1 text-left font-mono ${f === path ? 'bg-white/70 font-bold dark:bg-white/15' : 'hover:bg-white/40 dark:hover:bg-white/10'}`}>
                 {f}
               </button>
             </li>
           ))}
         </ul>
         <form
-          className="flex gap-1 border-t border-slate-200 p-1 dark:border-slate-800"
+          className="flex gap-1 border-t border-white/40 p-1 dark:border-white/10"
           onSubmit={(e) => {
             e.preventDefault();
             create();
           }}
         >
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新しいファイル名" className="min-w-0 flex-1 rounded border border-slate-300 bg-transparent px-1 dark:border-slate-700" />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新しいファイル名" className="min-w-0 flex-1 glass-input py-0.5" />
           <button type="submit" className="rounded bg-slate-700 px-1.5 text-white">＋</button>
         </form>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         {path !== null && saved !== undefined ? (
           <>
-            <div className="flex items-center gap-2 border-b border-slate-200 px-2 py-1 text-xs dark:border-slate-800">
+            <div className="flex items-center gap-2 border-b border-white/40 px-2 py-1 text-xs dark:border-white/10">
               <span className="font-mono font-bold">{path}</span>
               {dirty && <span className="text-amber-600">● 未保存</span>}
               <span className="ml-auto" />
@@ -98,12 +99,27 @@ export default function Editor({ repo, path, onSelect, onSave }: Props) {
                 保存（Ctrl+S）
               </button>
             </div>
+            {hasConflict(draft) && (
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-orange-300/60 bg-orange-100/50 px-2 py-1 text-xs dark:bg-orange-500/10">
+                <span className="font-bold text-orange-700 dark:text-orange-300">コンフリクト：</span>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'ours'))}>
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-500" />現在の変更（HEAD）を採用
+                </button>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'theirs'))}>
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-blue-500" />取り込む変更を採用
+                </button>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'both'))} data-testid="resolve-both">
+                  両方を採用
+                </button>
+                <span className="text-slate-500">→ 内容を確認して保存し、git add で解消済みにします</span>
+              </div>
+            )}
             <div className="min-h-0 flex-1">
               <MonacoEditor
                 path={path}
                 value={draft}
                 language={languageOf(path)}
-                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+                theme={theme === 'dark' ? 'glass-dark' : 'glass-light'}
                 onChange={(v) => setDraft(v ?? '')}
                 onMount={(ed) => {
                   editorRef.current = ed;

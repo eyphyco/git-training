@@ -158,7 +158,8 @@ export function Graph({ repo, highlight = [], compact }: Props) {
         {labels.map(({ l, i, n }) => {
           const text = l.text;
           const w = text.length * 7 + 14;
-          const x = nx(n.col) - w / 2;
+          // 左端のコミットの長いラベル（origin/main など）が SVG の外にはみ出さないようにする
+          const x = Math.max(2, nx(n.col) - w / 2);
           const y = ny(n.lane) - R - 6 - PILL_H - i * (PILL_H + 3);
           const style =
             l.kind === 'head'

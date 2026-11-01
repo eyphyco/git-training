@@ -1,10 +1,11 @@
 import { fail, type CommandDef } from '../command';
 import { getCommit, short, subject } from '../model/objects';
 import { currentBranch, headOid, isAncestor, isValidBranchName, logRef, resolveRev } from '../model/refs';
+import { aheadBehind, setUpstream, upstreamOf } from '../remote';
 
 export const branch: CommandDef = {
   name: 'branch',
-  spec: { short: { d: 'delete', D: 'force-delete', m: 'move', v: 'verbose', a: 'all', r: 'remotes', f: 'force' } },
+  spec: { short: { d: 'delete', D: 'force-delete', m: 'move', v: 'verbose', a: 'all', r: 'remotes', f: 'force', u: 'set-upstream-to' }, valued: ['set-upstream-to'], long: ['unset-upstream'] },
   run(ctx) {
     const repo = ctx.repo;
     const { opts, positional } = ctx.args;
@@ -20,9 +21,29 @@ export const branch: CommandDef = {
         if (!opts['force-delete'] && (!head || !isAncestor(repo, oid, head)))
           fail(`error: the branch '${name}' is not fully merged\nhint: If you are sure you want to delete it, run 'git branch -D ${name}'`, 'まだマージされていないコミットがあるため消せません（消すとそのコミットに辿り着けなくなります）。');
         delete repo.refs.heads[name];
+        if (repo.config.branches) delete repo.config.branches[name];
         ctx.out(`Deleted branch ${name} (was ${short(oid)}).`);
         ctx.emit({ type: 'BRANCH_DELETED', name, oid });
       }
+      return;
+    }
+
+    if (opts['set-upstream-to']) {
+      const target = opts['set-upstream-to'] as string;
+      const name = positional[0] ?? cur;
+      if (!name || !repo.refs.heads[name]) fail(`fatal: branch '${name}' does not exist`);
+      const slash = target.indexOf('/');
+      const [r, b] = [target.slice(0, slash), target.slice(slash + 1)];
+      if (slash < 0 || !repo.refs.remotes[r]?.[b]) fail(`fatal: the requested upstream branch '${target}' does not exist`, `「${target}」がありません。先に git fetch で取得しましょう。`);
+      setUpstream(repo, name, r, b);
+      ctx.out(`branch '${name}' set up to track '${target}'.`);
+      ctx.emit({ type: 'UPSTREAM_SET', branch: name, upstream: target });
+      return;
+    }
+    if (opts['unset-upstream']) {
+      const name = positional[0] ?? cur;
+      if (!name || !repo.config.branches?.[name]) fail(`fatal: branch '${name}' has no upstream information`);
+      delete repo.config.branches[name];
       return;
     }
 
@@ -51,7 +72,15 @@ export const branch: CommandDef = {
       }
       const w = Math.max(0, ...rows.map(([n]) => n.length));
       for (const [n, o, isCur] of rows) {
-        const text = opts.verbose ? `${n.padEnd(w)} ${short(o)} ${subject(getCommit(repo, o).message)}` : n;
+        let track = '';
+        const up = n.startsWith('remotes/') ? null : upstreamOf(repo, n);
+        if (up && ctx.raw.includes('-vv')) {
+          const theirs = repo.refs.remotes[up.remote]?.[up.branch];
+          const ab = theirs ? aheadBehind(repo, o, theirs) : null;
+          const parts = !ab ? ['gone'] : [ab.ahead ? `ahead ${ab.ahead}` : '', ab.behind ? `behind ${ab.behind}` : ''].filter(Boolean);
+          track = `[${up.ref}${parts.length ? `: ${parts.join(', ')}` : ''}] `;
+        }
+        const text = opts.verbose ? `${n.padEnd(w)} ${short(o)} ${track}${subject(getCommit(repo, o).message)}` : n;
         ctx.out(`${isCur ? '* ' : '  '}${text}`, isCur ? 'green' : n.startsWith('remotes/') ? 'red' : 'normal');
       }
       return;

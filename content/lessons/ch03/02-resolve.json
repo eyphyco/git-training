@@ -1,0 +1,48 @@
+{
+  "id": "ch03-02",
+  "title": "コンフリクトを解消する",
+  "level": "intermediate",
+  "doc": "02-resolve.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "menu.txt": "coffee 400\ntea 350\ncake 500\n" } },
+      { "id": "c2", "parent": "c1", "msg": "raise coffee price", "files": { "menu.txt": "coffee 450\ntea 350\ncake 500\n" } },
+      { "id": "c3", "parent": "c1", "msg": "add latte", "files": { "menu.txt": "coffee 400\nlatte 500\ntea 350\ncake 500\n" } }
+    ],
+    "branches": { "main": "c2", "feature/latte": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "feature/latte を main にマージして、コンフリクトを起こそう。",
+      "hints": ["git merge feature/latte"],
+      "answer": ["git merge feature/latte"],
+      "check": [{ "type": "fileStatus", "path": "menu.txt", "status": "conflicted" }]
+    },
+    {
+      "instruction": "menu.txt を **両方の変更を活かした内容** に直そう：コーヒーは 450 円、ラテ 500 円を追加。衝突マーカー（<<<<<<< ======= >>>>>>>）は全部消します。\n\nエディタタブで menu.txt を開くと「両方を採用」ボタンが使えます。ターミナルなら echo で書き直します。",
+      "hints": ["完成形は coffee 450 / latte 500 / tea 350 / cake 500 の4行", "エディタで「両方を採用」を押してから、coffee 400 の行を消して保存", "ターミナルなら: echo \"coffee 450\" > menu.txt に続けて >> で3行追記"],
+      "answer": ["echo \"coffee 450\" > menu.txt", "echo \"latte 500\" >> menu.txt", "echo \"tea 350\" >> menu.txt", "echo \"cake 500\" >> menu.txt"],
+      "check": [
+        { "type": "fileContent", "path": "menu.txt", "notContains": "<<<<<<<" },
+        { "type": "fileContent", "path": "menu.txt", "notContains": ">>>>>>>" },
+        { "type": "fileContent", "path": "menu.txt", "equals": "coffee 450\nlatte 500\ntea 350\ncake 500\n" }
+      ],
+      "explain": "ファイルは直りましたが、Git にはまだ「解消した」と伝えていません。"
+    },
+    {
+      "instruction": "git add menu.txt で「解消済み」と Git に伝えよう。",
+      "hints": ["コンフリクトの解消は add で知らせます", "git add menu.txt"],
+      "answer": ["git add menu.txt"],
+      "check": [{ "type": "fileStatus", "path": "menu.txt", "status": "staged" }],
+      "explain": "status の表示が「All conflicts fixed but you are still merging.」に変わります。"
+    },
+    {
+      "instruction": "git commit でマージを完了させよう（-m を省くと既定のメッセージが使われます）。",
+      "hints": ["マージ中の commit は -m なしでも OK", "git commit"],
+      "answer": ["git commit"],
+      "check": [{ "type": "hasMergeCommit", "ref": "main" }, { "type": "statusClean" }],
+      "explain": "マージコミットができ、グラフの2本の線が合流しました。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "merge", "add", "commit", "restore"]
+}

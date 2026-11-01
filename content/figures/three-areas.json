@@ -1,0 +1,13 @@
+{
+  "id": "three-areas",
+  "title": "3つのエリアとコミット",
+  "show": ["areas", "graph"],
+  "setup": { "workingTree": { "README.md": "# My App\n", "index.html": "<h1>Hello</h1>\n" } },
+  "intro": "ファイルはまだワークツリーにあるだけ（未追跡）。Git はまだ何も記録していません。",
+  "steps": [
+    { "commands": ["git add README.md"], "caption": "add で README.md だけがステージに載りました。index.html は載っていません。" },
+    { "commands": ["git commit -m \"add README\""], "caption": "commit でステージの内容がスナップショットとしてリポジトリに保存され、グラフに最初のコミットができました。" },
+    { "commands": ["echo \"説明文\" >> README.md"], "caption": "README.md を編集すると、ワークツリーだけが変わります（M）。ステージとリポジトリは元のまま。" },
+    { "commands": ["git add .", "git commit -m \"update README and add index\""], "caption": "add → commit で2つ目のコミット。親（1つ目）を指す矢印がつながりました。" }
+  ]
+}

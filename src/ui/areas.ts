@@ -56,11 +56,11 @@ export function motionFor(events: GitEvent[], area: 'worktree' | 'index' | 'head
 
 export const STATE_INFO: Record<FileState, { badge: string; text: string; cls: string }> = {
   untracked: { badge: 'U', text: '未追跡：Git がまだ管理していないファイルです。git add で追跡を始めます。', cls: 'border-rose-400 text-rose-700 dark:text-rose-300' },
-  ignored: { badge: '無視', text: '.gitignore で無視されているファイルです。git status にも出ず、git add . でも載りません。', cls: 'border-slate-300 text-slate-400 line-through decoration-slate-400/60' },
+  ignored: { badge: '無視', text: '.gitignore で無視されているファイルです。git status にも出ず、git add . でも載りません。', cls: 'border-white/60 text-slate-400 line-through decoration-slate-400/60 dark:border-white/10' },
   modified: { badge: 'M', text: '変更あり（未ステージ）：ステージの内容から変わっています。git add でステージへ、git restore で変更を捨てます。', cls: 'border-rose-400 text-rose-700 dark:text-rose-300' },
   deleted: { badge: 'D', text: '削除（未ステージ）：ワークツリーから消えています。git add（または git rm）で削除をステージへ、git restore で復活します。', cls: 'border-dashed border-rose-400 text-rose-500 opacity-70' },
-  clean: { badge: '', text: '変更なし：隣のエリアと同じ内容です。', cls: 'border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300' },
-  conflict: { badge: '!', text: 'コンフリクト中：<<<<<<< 〜 >>>>>>> を直して git add すると解消済みになります。', cls: 'border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+  clean: { badge: '', text: '変更なし：隣のエリアと同じ内容です。', cls: 'border-white/70 text-slate-600 dark:border-white/15 dark:text-slate-300' },
+  conflict: { badge: '!', text: 'コンフリクト中：<<<<<<< 〜 >>>>>>> を直して git add すると解消済みになります。', cls: 'border-orange-500 bg-orange-100/70 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' },
   added: { badge: 'A', text: '新規ファイル（ステージ済み）：次のコミットで初めて記録されます。git restore --staged で外せます。', cls: 'border-emerald-500 text-emerald-700 dark:text-emerald-300' },
   staged: { badge: 'M', text: '変更（ステージ済み）：次のコミットに入ります。git restore --staged で外せます。', cls: 'border-emerald-500 text-emerald-700 dark:text-emerald-300' },
   removed: { badge: 'D', text: '削除（ステージ済み）：次のコミットでこのファイルが消えます。', cls: 'border-dashed border-emerald-500 text-emerald-600 opacity-70' },

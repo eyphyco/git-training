@@ -2,14 +2,14 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateAll } from '../src/lesson/checks';
 import { chapters, lessons } from '../src/lesson/content';
-import { answerQuiz, checkStep, runCommand, startSession } from '../src/lesson/session';
+import { answerQuiz, checkStep, runCommand, startSession, toggleCheck } from '../src/lesson/session';
 import glossary from './glossary.json';
 
 const all = Object.values(lessons);
 
 describe('教材', () => {
   it('chapters.json のレッスンが全て存在し、どの章にも属さないレッスンがない', () => {
-    const listed = chapters.flatMap((c) => [...c.lessons, ...(c.challenge ? [c.challenge] : [])]);
+    const listed = chapters.flatMap((c) => [...c.lessons, ...(c.challenge ? [c.challenge] : []), ...(c.practice ? [c.practice] : [])]);
     for (const id of listed) expect(lessons[id], id).toBeDefined();
     expect(all.map((l) => l.id).sort()).toEqual([...listed].sort());
   });
@@ -29,6 +29,10 @@ describe('教材', () => {
       if (step.type === 'quiz') {
         expect(step.answer).toBeLessThan(step.choices.length);
         s = answerQuiz(lesson, s, step.answer).session;
+        return;
+      }
+      if (step.type === 'checklist') {
+        step.items.forEach((_, j) => (s = toggleCheck(lesson, s, j)));
         return;
       }
       // 何もしないうちからクリア済みになっているステップは、課題として成り立っていない
