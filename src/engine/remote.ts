@@ -18,6 +18,7 @@ export function copyObjects(from: RepoState, to: RepoState, tips: Oid[]) {
     to.objects[oid] = obj;
     if (obj.type === 'commit') stack.push(obj.tree, ...obj.parents);
     else if (obj.type === 'tree') stack.push(...obj.entries.map((e) => e.oid));
+    else if (obj.type === 'tag') stack.push(obj.object);
   }
 }
 
@@ -76,9 +77,14 @@ export function fetchRemote(ctx: Ctx, name: string, opts: { prune?: boolean; qui
   if (opts.prune) for (const b of Object.keys(before)) if (!(b in after)) updates.push({ branch: b, ref: `${name}/${b}`, from: before[b], to: null });
   const next: Record<string, Oid> = opts.prune ? after : { ...before, ...after };
   repo.refs.remotes[name] = next;
-  if (updates.length && !opts.quiet) {
+  // タグは、手元にないものだけ取り込む（実 Git は既存のタグを勝手に書き換えない）
+  const newTags = Object.entries(remote.refs.tags).filter(([t]) => !repo.refs.tags[t]);
+  copyObjects(remote, repo, newTags.map(([, o]) => o));
+  for (const [t, o] of newTags) repo.refs.tags[t] = o;
+  if ((updates.length || newTags.length) && !opts.quiet) {
     ctx.out(`From ${remoteUrl(repo, name).replace(/\.git$/, '')}`);
     for (const u of updates) ctx.out(refLine(u, u.to ? u.branch : '', `${name}/${u.branch}`));
+    for (const [t] of newTags.sort()) ctx.out(` * [new tag]         ${t.padEnd(10)} -> ${t}`);
   }
   if (updates.length) ctx.emit({ type: 'FETCHED', remote: name, updates: updates.map(({ branch: _, ...u }) => u) });
   return updates;

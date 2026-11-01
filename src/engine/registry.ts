@@ -13,6 +13,7 @@ import { fetch } from './commands/fetch';
 import { init } from './commands/init';
 import { log } from './commands/log';
 import { merge } from './commands/merge';
+import { catFile, lsTree, revParse } from './commands/plumbing';
 import { pull } from './commands/pull';
 import { push } from './commands/push';
 import { rebase } from './commands/rebase';
@@ -58,6 +59,9 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   reflog,
   worktree,
   bisect,
+  'cat-file': catFile,
+  'ls-tree': lsTree,
+  'rev-parse': revParse,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
