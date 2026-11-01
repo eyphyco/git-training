@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { chapterOf } from '../lesson/content';
 import { isChapterUnlocked, useProgress } from '../store/progress';
 import { ChapterPage } from './ChapterPage';
+import { FreePlayPage } from './FreePlayPage';
 import { Home } from './Home';
 import { LessonPage } from './LessonPage';
 import { href, useRoute } from './router';
@@ -24,6 +25,7 @@ export function App() {
 
   let page: React.ReactNode;
   if (route.name === 'chapter') page = <ChapterPage id={route.id} />;
+  else if (route.name === 'play') page = <FreePlayPage state={route.state} />;
   else if (route.name === 'lesson') {
     const ch = chapterOf(route.id);
     page =

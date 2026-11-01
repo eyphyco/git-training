@@ -1,10 +1,14 @@
 // hash ルーティング（GitHub Pages でリポジトリ名に依存しないため）。
 import { useEffect, useState } from 'react';
 
-export type Route = { name: 'home' } | { name: 'chapter'; id: string } | { name: 'lesson'; id: string };
+export type Route = { name: 'home' } | { name: 'chapter'; id: string } | { name: 'lesson'; id: string } | { name: 'play'; state?: string } | { name: 'commands'; q?: string };
 
 export function parseHash(hash: string): Route {
-  const [, kind, id] = hash.replace(/^#/, '').split('/');
+  const [path, query = ''] = hash.replace(/^#/, '').split('?');
+  const [, kind, id] = path.split('/');
+  const params = new URLSearchParams(query);
+  if (kind === 'play') return { name: 'play', state: params.get('s') ?? undefined };
+  if (kind === 'commands') return { name: 'commands', q: id ? decodeURIComponent(id) : undefined };
   if (kind === 'chapter' && id) return { name: 'chapter', id };
   if (kind === 'lesson' && id) return { name: 'lesson', id };
   return { name: 'home' };
@@ -24,4 +28,6 @@ export const href = {
   home: () => '#/',
   chapter: (id: string) => `#/chapter/${id}`,
   lesson: (id: string) => `#/lesson/${id}`,
+  play: (state?: string) => (state ? `#/play?s=${state}` : '#/play'),
+  commands: (q?: string) => (q ? `#/commands/${encodeURIComponent(q)}` : '#/commands'),
 };

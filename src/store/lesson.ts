@@ -16,6 +16,8 @@ type Store = {
   /** GUI ボタンなどから入力欄に入れたいテキスト */
   pendingInput: string | null;
   open(lesson: Lesson): void;
+  /** フリープレイ：任意の World から始める */
+  openWorld(lesson: Lesson, world: World, note: string): void;
   run(line: string, prompt: string): void;
   save(path: string, content: string | null): void;
   answer(choice: number): boolean;
@@ -29,6 +31,9 @@ type Store = {
   setPendingInput(text: string | null): void;
 };
 
+/** フリープレイ（課題なし）は進捗に記録しない */
+export const FREEPLAY_ID = 'freeplay';
+
 let nextId = 1;
 const line = (kind: TermLine['kind'], text: string, tone: OutputLine['tone'] = 'normal', prompt?: string): TermLine => ({ id: nextId++, kind, text, tone, prompt });
 
@@ -40,6 +45,7 @@ export const useLesson = create<Store>((set, get) => {
     const { lesson } = get();
     if (!lesson) return;
     set({ session: next });
+    if (lesson.id === FREEPLAY_ID) return;
     const progress = useProgress.getState();
     if (next.done) {
       progress.completeLesson(lesson.id);
@@ -66,6 +72,11 @@ export const useLesson = create<Store>((set, get) => {
         lines.push(line('info', '（前回の続きから再開しました。最初からやり直すには「最初から」ボタン）', 'dim'));
       }
       set({ lesson, session, lines, history: session.commands.slice(-50) });
+    },
+    openWorld(lesson, world, note) {
+      const base = S.startSession(lesson);
+      const session = { ...base, world, initial: world, timeline: [{ world, label: '初期状態' }] };
+      set({ lesson, session, lines: [...WELCOME(lesson), line('info', note, 'dim')], history: [] });
     },
     run(input, prompt) {
       const { lesson, session, lines, history } = get();
@@ -119,7 +130,8 @@ export const useLesson = create<Store>((set, get) => {
     restartLesson() {
       const { lesson } = get();
       if (!lesson) return;
-      useProgress.getState().saveResume(undefined);
+      // フリープレイの「最初から」でレッスンの再開データを消さない
+      if (lesson.id !== FREEPLAY_ID) useProgress.getState().saveResume(undefined);
       set({ session: S.startSession(lesson), lines: WELCOME(lesson) });
     },
     restore(world, name) {
