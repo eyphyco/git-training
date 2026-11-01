@@ -101,6 +101,7 @@ export function LessonPage({ id }: { id: string }) {
               {view === 'areas' ? (
                 <AreaView
                   repo={repo}
+                  remote={repo.config.remotes?.origin ? session.world.remotes.origin : undefined}
                   prev={prev}
                   events={session.lastEvents}
                   seq={session.seq}

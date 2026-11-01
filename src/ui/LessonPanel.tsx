@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { createWorld } from '../engine/world';
 import { nextLessonId, chapterOf } from '../lesson/content';
 import type { Session } from '../lesson/session';
-import type { GraphShape, Lesson, TaskStep } from '../lesson/types';
+import type { ChecklistStep, GraphShape, Lesson, TaskStep } from '../lesson/types';
 import { useLesson } from '../store/lesson';
 import { useProgress } from '../store/progress';
 import { Graph } from './graph/Graph';
@@ -86,6 +86,30 @@ function TaskCard({ lesson, step }: { lesson: Lesson; step: TaskStep }) {
   );
 }
 
+function ChecklistCard({ step, session }: { step: ChecklistStep; session: Session }) {
+  const toggle = useLesson((s) => s.toggleCheck);
+  return (
+    <div>
+      <div className="mb-2 text-sm leading-relaxed">
+        <Markdown text={step.instruction} inline />
+      </div>
+      <ul className="space-y-1.5">
+        {step.items.map((item, i) => (
+          <li key={i}>
+            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-white/60 bg-white/40 px-3 py-2 text-sm backdrop-blur-md hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
+              <input type="checkbox" checked={session.checked.includes(i)} onChange={() => toggle(i)} className="mt-1 accent-sky-500" />
+              <span className={session.checked.includes(i) ? 'text-slate-400 line-through' : ''}>
+                <Markdown text={item} inline />
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-slate-500">自分の PC で実際にやってからチェックしましょう（自己申告です）。</p>
+    </div>
+  );
+}
+
 function QuizCard({ step, session }: { step: Extract<Lesson['steps'][number], { type: 'quiz' }>; session: Session }) {
   const answer = useLesson((s) => s.answer);
   return (
@@ -131,6 +155,7 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
       </div>
       <h1 className="mt-1 mb-2 text-lg font-bold">
         {lesson.challenge && <span className="mr-2 rounded bg-violet-600 px-1.5 py-0.5 align-middle text-xs text-white">章末チャレンジ</span>}
+        {lesson.practice && <span className="mr-2 rounded bg-teal-600 px-1.5 py-0.5 align-middle text-xs text-white">実機演習</span>}
         {lesson.title}
       </h1>
       {lesson.body && (
@@ -154,7 +179,7 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
       {session.done ? (
         <div className="rounded-lg border-2 border-emerald-400/80 bg-white/55 p-4 text-center dark:bg-white/5" data-testid="lesson-done">
           <div className="text-2xl">🎉</div>
-          <div className="mt-1 font-bold">{lesson.challenge ? '章末チャレンジ クリア！次の章が解放されました' : 'レッスン完了！'}</div>
+          <div className="mt-1 font-bold">{lesson.challenge ? '章末チャレンジ クリア！次の章が解放されました' : lesson.practice ? '実機演習 完了！' : 'レッスン完了！'}</div>
           <div className="mt-3 flex justify-center gap-2 text-sm">
             <button type="button" onClick={restart} className="glass-btn px-3 py-1">
               もう一度
@@ -172,8 +197,14 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
         </div>
       ) : step ? (
         <div className="rounded-lg border-2 border-sky-400/70 bg-white/55 p-3 shadow-lg shadow-sky-500/10 dark:bg-white/5" data-testid="current-step">
-          <div className="mb-1 text-xs font-bold text-sky-700 dark:text-sky-300">{step.type === 'quiz' ? '理解度クイズ' : `課題 ${done + 1}`}</div>
-          {step.type === 'quiz' ? <QuizCard key={session.stepIndex} step={step} session={session} /> : <TaskCard key={session.stepIndex} lesson={lesson} step={step} />}
+          <div className="mb-1 text-xs font-bold text-sky-700 dark:text-sky-300">{step.type === 'quiz' ? '理解度クイズ' : step.type === 'checklist' ? `実機でやること ${done + 1}` : `課題 ${done + 1}`}</div>
+          {step.type === 'quiz' ? (
+            <QuizCard key={session.stepIndex} step={step} session={session} />
+          ) : step.type === 'checklist' ? (
+            <ChecklistCard key={session.stepIndex} step={step} session={session} />
+          ) : (
+            <TaskCard key={session.stepIndex} lesson={lesson} step={step} />
+          )}
         </div>
       ) : null}
     </div>

@@ -1,8 +1,9 @@
 // 4エリアビュー（F-03）。add / commit / restore でファイルが隣のエリアへ動いて見える。
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
-import { commitFiles } from '../engine/model/objects';
-import { headOid } from '../engine/model/refs';
+import { commitFiles, getCommit, short } from '../engine/model/objects';
+import { currentBranch, headOid } from '../engine/model/refs';
+import { aheadBehind, remoteUrl, upstreamOf } from '../engine/remote';
 import type { GitEvent, Path, RepoState } from '../engine/model/types';
 import { useAnim } from './anim';
 import { computeAreas, motionFor, STATE_INFO, type FileItem, type Motion } from './areas';
@@ -11,6 +12,8 @@ import { Term } from './glossary';
 
 type Props = {
   repo: RepoState;
+  /** GitHub 側（origin）。ないときはリモート列をグレー表示 */
+  remote?: RepoState;
   prev: RepoState | null;
   events: GitEvent[];
   seq: number;
@@ -74,7 +77,59 @@ function Column({ title, term, hint, children, dim }: { title: string; term?: st
   );
 }
 
-export function AreaView({ repo, prev, events, seq, onCommand, onOpenFile }: Props) {
+function RemoteColumn({ repo, remote, events, seq }: { repo: RepoState; remote: RepoState; events: GitEvent[]; seq: number }) {
+  const { d } = useAnim();
+  const def = remote.head.type === 'symbolic' ? remote.head.ref : 'main';
+  const files = remote.refs.heads[def] ? Object.keys(commitFiles(remote, remote.refs.heads[def])).sort() : [];
+  const branches = Object.entries(remote.refs.heads).sort(([a], [b]) => (a === def ? -1 : b === def ? 1 : a.localeCompare(b)));
+  const cur = currentBranch(repo);
+  const up = upstreamOf(repo, cur);
+  const local = cur ? repo.refs.heads[cur] : undefined;
+  const theirs = up ? repo.refs.remotes[up.remote]?.[up.branch] : undefined;
+  const ab = local && theirs ? aheadBehind(repo, local, theirs) : null;
+  const flash = events.some((e) => e.type === 'PUSHED' || e.type === 'TEAMMATE_PUSHED');
+  return (
+    <Column title="リモート（origin）" term="remote" hint={remoteUrl(repo, 'origin').replace(/^https:\/\//, '')}>
+      {branches.map(([b, oid]) => (
+        <motion.li key={flash ? `${b}:${seq}` : b} initial={flash ? { x: -50, opacity: 0 } : false} animate={{ x: 0, opacity: 1 }} transition={{ duration: d(0.5) }}>
+          <Explain
+            asChild
+            content={
+              <div>
+                <b>GitHub 上の {b}</b>
+                <br />
+                コミット {short(oid)} {getCommit(remote, oid).message.split('\n')[0]}
+                <br />
+                {repo.refs.remotes.origin?.[b] === oid ? `手元の origin/${b} と同じです。` : `手元の origin/${b} はまだこの位置を知りません（git fetch で更新）。`}
+              </div>
+            }
+          >
+            <div className="flex items-center gap-1 rounded-lg border border-dashed border-slate-400/70 bg-white/40 px-2 py-1 font-mono text-xs backdrop-blur-md dark:bg-white/5" data-testid={`remote-branch-${b}`}>
+              <span className="truncate font-bold">{b}</span>
+              <span className="ml-auto text-slate-500">{short(oid)}</span>
+            </div>
+          </Explain>
+        </motion.li>
+      ))}
+      {ab && (ab.ahead > 0 || ab.behind > 0) && (
+        <li className="rounded-lg bg-sky-100/60 px-2 py-1 text-[11px] text-sky-800 dark:bg-sky-500/10 dark:text-sky-200">
+          {cur} は {up!.ref} より{ab.ahead ? ` ${ab.ahead} 進み` : ''}
+          {ab.ahead && ab.behind ? '、' : ''}
+          {ab.behind ? ` ${ab.behind} 遅れ` : ''}
+          {ab.ahead ? '（push 待ち）' : '（pull 待ち）'}
+        </li>
+      )}
+      {files.length > 0 && <li className="mt-1 text-[10px] text-slate-500">{def} のファイル</li>}
+      {files.map((p) => (
+        <li key={p} className="truncate rounded-lg border border-white/60 bg-white/30 px-2 py-0.5 font-mono text-[11px] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+          {p}
+        </li>
+      ))}
+    </Column>
+  );
+}
+
+export function AreaView({ repo, remote, prev, events, seq, onCommand, onOpenFile }: Props) {
   const areas = useMemo(() => computeAreas(repo), [repo]);
   const changed = useMemo(() => {
     const set = new Set<Path>();
@@ -110,9 +165,13 @@ export function AreaView({ repo, prev, events, seq, onCommand, onOpenFile }: Pro
         {areas.head.map((f) => chip(f, 'head'))}
       </Column>
       {arrow('push')}
-      <Column title="リモート" term="remote" hint="第4章で解放" dim>
-        <li className="text-xs text-slate-400">origin（第4章）</li>
-      </Column>
+      {remote ? (
+        <RemoteColumn repo={repo} remote={remote} events={events} seq={seq} />
+      ) : (
+        <Column title="リモート" term="remote" hint="リモートなし" dim>
+          <li className="text-xs text-slate-400">git remote add で登録すると表示されます</li>
+        </Column>
+      )}
     </div>
   );
 }

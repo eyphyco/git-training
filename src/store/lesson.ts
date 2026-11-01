@@ -19,6 +19,9 @@ type Store = {
   run(line: string, prompt: string): void;
   save(path: string, content: string | null): void;
   answer(choice: number): boolean;
+  toggleCheck(item: number): void;
+  /** フリープレイなどレッスン外の出来事（同僚の push）を反映する */
+  apply(world: World, events: import('../engine/model/types').GitEvent[], label: string, summary: string): void;
   undo(): void;
   reset(): void;
   restartLesson(): void;
@@ -59,7 +62,7 @@ export const useLesson = create<Store>((set, get) => {
       const r = progress.resume;
       const lines = WELCOME(lesson);
       if (r && r.lessonId === lesson.id && r.stepIndex < lesson.steps.length) {
-        session = { ...session, world: r.world, stepIndex: r.stepIndex, commands: r.commands, undo: r.undo, summary: '前回の続きから再開しました。' };
+        session = { ...session, world: r.world, stepIndex: r.stepIndex, commands: r.commands, undo: r.undo, timeline: [{ world: r.world, label: '（前回の続き）' }], summary: '前回の続きから再開しました。' };
         lines.push(line('info', '（前回の続きから再開しました。最初からやり直すには「最初から」ボタン）', 'dim'));
       }
       set({ lesson, session, lines, history: session.commands.slice(-50) });
@@ -89,6 +92,17 @@ export const useLesson = create<Store>((set, get) => {
       const { session: next, correct } = S.answerQuiz(lesson, session, choice);
       commit(next);
       return correct;
+    },
+    toggleCheck(item) {
+      const { lesson, session } = get();
+      if (!lesson || !session) return;
+      commit(S.toggleCheck(lesson, session, item));
+    },
+    apply(world, events, label, summary) {
+      const { lesson, session, lines } = get();
+      if (!lesson || !session) return;
+      set({ lines: [...lines, line('info', summary, 'dim')] });
+      commit(S.applyWorld(lesson, session, world, events, label, summary));
     },
     undo() {
       const { session, lines } = get();

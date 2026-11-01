@@ -3,6 +3,7 @@ import MonacoEditor, { type OnMount } from '@monaco-editor/react';
 import { useEffect, useRef, useState } from 'react';
 import type { RepoState } from '../../engine/model/types';
 import { useProgress } from '../../store/progress';
+import { hasConflict, resolveConflicts } from './conflict';
 import { languageOf, monaco } from './monaco';
 
 type Props = { repo: RepoState; path: string | null; onSelect(path: string | null): void; onSave(path: string, content: string | null): void };
@@ -98,6 +99,21 @@ export default function Editor({ repo, path, onSelect, onSave }: Props) {
                 保存（Ctrl+S）
               </button>
             </div>
+            {hasConflict(draft) && (
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-orange-300/60 bg-orange-100/50 px-2 py-1 text-xs dark:bg-orange-500/10">
+                <span className="font-bold text-orange-700 dark:text-orange-300">コンフリクト：</span>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'ours'))}>
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-green-500" />現在の変更（HEAD）を採用
+                </button>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'theirs'))}>
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-blue-500" />取り込む変更を採用
+                </button>
+                <button type="button" className="glass-btn px-2 py-0.5" onClick={() => setDraft(resolveConflicts(draft, 'both'))} data-testid="resolve-both">
+                  両方を採用
+                </button>
+                <span className="text-slate-500">→ 内容を確認して保存し、git add で解消済みにします</span>
+              </div>
+            )}
             <div className="min-h-0 flex-1">
               <MonacoEditor
                 path={path}
