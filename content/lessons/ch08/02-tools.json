@@ -1,0 +1,47 @@
+{
+  "id": "ch08-02",
+  "title": "hooks・worktree と、AI エージェントとの開発",
+  "level": "advanced",
+  "doc": "02-tools.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# App\n", "app.js": "app()\n" } }],
+    "branches": { "main": "c1" }
+  },
+  "steps": [
+    {
+      "instruction": "console.log が入ったコミットを止める **pre-commit フック**を作ろう。エディタタブで `.git/hooks/pre-commit` を作るか、下の4行を順に実行します。\n\n```\necho '#!/bin/sh' > .git/hooks/pre-commit\necho 'if git diff --cached | grep -q \"^+.*console.log\"; then' >> .git/hooks/pre-commit\necho '  echo \"console.log が残っています\"; exit 1' >> .git/hooks/pre-commit\necho 'fi' >> .git/hooks/pre-commit\n```",
+      "hints": ["答えを見る → 入力欄へ で1行ずつ実行できます"],
+      "answer": ["echo '#!/bin/sh' > .git/hooks/pre-commit", "echo 'if git diff --cached | grep -q \"^+.*console.log\"; then' >> .git/hooks/pre-commit", "echo '  echo \"console.log が残っています\"; exit 1' >> .git/hooks/pre-commit", "echo 'fi' >> .git/hooks/pre-commit"],
+      "check": [{ "type": "hookExists", "name": "pre-commit" }, { "type": "fileContent", "path": "README.md", "exists": true }]
+    },
+    {
+      "instruction": "わざと app.js に `console.log(1)` を足してコミットし、フックに止められるのを確かめよう。",
+      "hints": ["echo \"console.log(1)\" >> app.js → git commit -am debug"],
+      "answer": ["echo \"console.log(1)\" >> app.js", "git commit -am debug"],
+      "expectError": true,
+      "check": [{ "type": "commandUsed", "command": "git commit" }, { "type": "commitCount", "ref": "main", "count": 1 }],
+      "explain": "コミットされませんでした。チームでは同じチェックを CI でも行うのが普通です（hooks は各自の PC の設定なので、全員が入れているとは限らないため）。"
+    },
+    {
+      "instruction": "次は **worktree**。今の作業（app.js の変更）はそのままに、別フォルダ ../hotfix で hotfix ブランチの作業を始めよう。",
+      "hints": ["git worktree add ../hotfix"],
+      "answer": ["git worktree add ../hotfix"],
+      "check": [{ "type": "worktreeExists", "path": "/home/you/hotfix" }, { "type": "branchExists", "name": "hotfix" }]
+    },
+    {
+      "instruction": "`cd ../hotfix` で移動し、README.md を直してコミット、`cd ../project` で戻ろう。元のフォルダの app.js の変更は無事なはず。",
+      "hints": ["cd ../hotfix → echo \"# My App\" > README.md → git commit -am \"fix title\" → cd ../project"],
+      "answer": ["cd ../hotfix", "echo \"# My App\" > README.md", "git commit -am \"fix title\"", "cd ../project"],
+      "check": [{ "type": "commitCount", "ref": "hotfix", "count": 2 }, { "type": "headOn", "branch": "main" }, { "type": "fileContent", "path": "app.js", "contains": "console.log" }],
+      "explain": "1つのリポジトリで、2つのブランチを同時に開いて作業できました（グラフの hotfix 📁 は、別のフォルダで使っている印）。"
+    },
+    {
+      "type": "quiz",
+      "question": "Claude Code などの AI エージェントを2つ並列で動かすとき、worktree が役立つ理由は？",
+      "choices": ["AI が速くなるから", "それぞれ別のフォルダ・別のブランチで作業できるので、ファイルを上書きし合わない", "worktree を使うと PR が不要になるから"],
+      "answer": 1,
+      "explain": "1つのフォルダで2つのエージェントが同時に編集すると、変更が混ざってしまいます。worktree ならブランチごとにフォルダが分かれ、それぞれ PR にできます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "worktree", "show", "restore"]
+}

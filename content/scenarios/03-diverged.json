@@ -1,0 +1,59 @@
+{
+  "id": "sc-03",
+  "title": "長期ブランチが main から大きく乖離",
+  "level": "advanced",
+  "doc": "03-diverged.md",
+  "scenario": { "summary": "しばらく放置した feature ブランチに main を取り込み、コンフリクトを解消してから PR を出す。", "members": ["Tanaka（レビュアー）"] },
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "styles.css": "body { color: black; }\n" } },
+      { "id": "c2", "parent": "c1", "msg": "new header", "files": { "header.html": "<header></header>\n" } },
+      { "id": "c3", "parent": "c2", "msg": "dark theme", "files": { "styles.css": "body { color: white; background: black; }\n" } },
+      { "id": "c4", "parent": "c3", "msg": "footer", "files": { "footer.html": "<footer></footer>\n" } },
+      { "id": "r1", "parent": "c1", "msg": "add report", "files": { "report.html": "<section class=report></section>\n" } },
+      { "id": "r2", "parent": "r1", "msg": "report styles", "files": { "styles.css": "body { color: black; }\n.report { margin: 0; }\n" } }
+    ],
+    "branches": { "main": "c4", "feature/report": "r2" },
+    "head": "feature/report",
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c4", "feature/report": "r2" } } }
+  },
+  "triggers": [
+    { "id": "ask", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Tanaka", "text": "feature/report、main からだいぶ離れてますね（main に新しいコミットが3つ）。styles.css をお互いに触っているので、main を取り込んでコンフリクトを解消してから PR を出してください。共有ブランチなので rebase ではなく merge でお願いします。" }] },
+    { "id": "conflict", "when": { "type": "event", "event": "CONFLICT" }, "actions": [{ "type": "message", "from": "Tanaka", "text": "コンフリクトしましたか？ ダークテーマ（color: white; background: black）は残して、.report の行も残す形でお願いします。" }] },
+    {
+      "id": "review",
+      "when": { "type": "event", "event": "PR_OPENED" },
+      "actions": [
+        { "type": "review", "author": "Tanaka", "state": "approved", "body": "きれいに解消できてます！" },
+        { "type": "message", "from": "Tanaka", "text": "Approve しました。merge commit でマージしてください。" }
+      ]
+    },
+    { "id": "thanks", "when": { "type": "event", "event": "PR_MERGED" }, "actions": [{ "type": "message", "from": "Tanaka", "text": "マージありがとうございます！ main を pull しておいてくださいね。" }] }
+  ],
+  "steps": [
+    {
+      "instruction": "feature/report に main を取り込み（merge）、styles.css のコンフリクトをチャットの指示どおりに解消してマージを完了させよう。",
+      "hints": ["git merge main でコンフリクトが起きます", "styles.css を「body { color: white; background: black; }」と「.report { margin: 0; }」の2行にする（エディタの「両方を採用」から直しても OK）", "直したら git add styles.css → git commit"],
+      "answer": ["git merge main", "echo \"body { color: white; background: black; }\" > styles.css", "echo \".report { margin: 0; }\" >> styles.css", "git add styles.css", "git commit"],
+      "check": [
+        { "type": "containsCommit", "ref": "feature/report", "commit": "main" },
+        { "type": "fileContent", "path": "styles.css", "area": "head", "contains": "background: black" },
+        { "type": "fileContent", "path": "styles.css", "area": "head", "contains": ".report" },
+        { "type": "inProgress", "op": null }
+      ]
+    },
+    {
+      "instruction": "push して PR を作ろう（force push は不要です）。",
+      "hints": ["git push → gh pr create --title \"...\" --body \"...\""],
+      "answer": ["git push", "gh pr create --title \"レポート画面\" --body \"main を取り込み済み\""],
+      "check": [{ "type": "prState", "head": "feature/report", "state": "open" }, { "type": "remoteEquals", "ref": "feature/report" }]
+    },
+    {
+      "instruction": "承認されたら merge commit でマージし、main を最新にしよう。",
+      "hints": ["gh pr merge --merge --delete-branch → git pull"],
+      "answer": ["gh pr merge --merge --delete-branch", "git pull"],
+      "check": [{ "type": "prState", "head": "feature/report", "state": "merged", "method": "merge" }, { "type": "remoteEquals", "ref": "main" }]
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "merge", "fetch", "pull", "push", "restore", "reset", "reflog", "rebase"]
+}

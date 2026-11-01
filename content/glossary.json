@@ -345,5 +345,41 @@
       "push",
       "rebase"
     ]
+  },
+  "branch-strategy": {
+    "term": "ブランチ戦略",
+    "short": "どんなブランチを、どこから作って、どこへマージするかのチームの約束。GitHub Flow・Git Flow・GitLab Flow・トランクベースなど。",
+    "related": [
+      "branch",
+      "merge"
+    ]
+  },
+  "semver": {
+    "term": "SemVer（セマンティック バージョニング）",
+    "short": "MAJOR.MINOR.PATCH の3つの数字で版を表す決まり。互換性のない変更は MAJOR、機能追加は MINOR、バグ修正は PATCH を上げる。",
+    "related": [
+      "tag"
+    ]
+  },
+  "hooks": {
+    "term": "hooks（フック）",
+    "short": "commit や push の前後に Git が自動で実行するスクリプト（.git/hooks/）。0 以外で終わると操作を止められる。",
+    "related": [
+      "commit"
+    ]
+  },
+  "worktree": {
+    "term": "worktree",
+    "short": "1つのリポジトリで作業フォルダを複数持つ仕組み。ブランチごとに別のフォルダで同時に作業できる。",
+    "related": [
+      "branch"
+    ]
+  },
+  "bisect": {
+    "term": "bisect",
+    "short": "good と bad のコミットの間を二分探索して、バグが入ったコミットを見つける機能。",
+    "related": [
+      "commit"
+    ]
   }
 }

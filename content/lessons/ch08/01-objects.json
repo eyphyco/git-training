@@ -1,0 +1,57 @@
+{
+  "id": "ch08-01",
+  "title": "Git の中身：オブジェクトと refs",
+  "level": "advanced",
+  "doc": "01-objects.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# App\n", "src/app.js": "app()\n" } },
+      { "id": "c2", "parent": "c1", "msg": "update readme", "files": { "README.md": "# My App\n" } }
+    ],
+    "branches": { "main": "c2" }
+  },
+  "steps": [
+    {
+      "instruction": "まず `cat .git/HEAD` で、HEAD の正体を見よう。",
+      "hints": ["cat .git/HEAD"],
+      "answer": ["cat .git/HEAD"],
+      "check": [{ "type": "commandUsed", "command": "cat .git/HEAD" }],
+      "explain": "「ref: refs/heads/main」— HEAD は「今いるブランチの名前」を書いただけのファイルです。"
+    },
+    {
+      "instruction": "そのブランチ `.git/refs/heads/main` の中身も見よう。",
+      "hints": ["cat .git/refs/heads/main"],
+      "answer": ["cat .git/refs/heads/main"],
+      "check": [{ "type": "commandUsed", "command": "cat .git/refs/heads/main" }],
+      "explain": "40桁のコミット ID が1行あるだけ。ブランチ ＝ コミット ID を書いた小さなファイル、つまり「名札」です。"
+    },
+    {
+      "instruction": "`git cat-file -p HEAD` で、コミットオブジェクトの中身を見よう。",
+      "hints": ["git cat-file -p HEAD"],
+      "answer": ["git cat-file -p HEAD"],
+      "check": [{ "type": "commandUsed", "command": "git cat-file -p" }],
+      "explain": "tree（その時点の全ファイル）・parent（親）・author・committer・メッセージが書かれています。右の「内部構造」タブでも、ID をクリックして tree → blob とたどれます。"
+    },
+    {
+      "instruction": "`git cat-file -p HEAD^{tree}` でツリー（フォルダ）の中身を見よう。src がさらに tree になっていることも確認。",
+      "hints": ["git cat-file -p HEAD^{tree}"],
+      "answer": ["git cat-file -p HEAD^{tree}"],
+      "check": [{ "type": "commandUsed", "command": "git cat-file -p HEAD^{tree}" }]
+    },
+    {
+      "type": "quiz",
+      "question": "2つのコミットで README.md 以外の src/app.js は変わっていません。src/app.js の blob はいくつ保存されている？",
+      "choices": ["コミットごとに1つずつ（2つ）", "同じ内容なので1つだけ（両方のコミットのツリーが同じ blob を指す）", "差分だけが保存されるので0"],
+      "answer": 1,
+      "explain": "オブジェクトの ID は中身の SHA-1 なので、同じ内容は同じ ID ＝1つだけ保存されます（内容アドレス方式）。コミットは「全ファイルのスナップショット」でも、容量はムダになりません。"
+    },
+    {
+      "type": "quiz",
+      "question": "コミットのメッセージを1文字でも変えると、コミット ID はどうなる？",
+      "choices": ["変わらない", "変わる（中身の SHA-1 が ID なので）", "メッセージは ID に関係しない"],
+      "answer": 1,
+      "explain": "だから amend や rebase をすると「別のコミット」になります。親の ID も中身に含まれるので、途中のコミットを変えるとその後ろの ID も全部変わります。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "show", "cat-file", "ls-tree", "rev-parse", "branch", "switch", "add", "commit"]
+}

@@ -1,0 +1,48 @@
+{
+  "id": "ch07-01",
+  "title": "GitHub Flow とトランクベース開発",
+  "level": "advanced",
+  "doc": "01-github-flow.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "app.js": "app()\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "hosting": { "strategy": "github-flow", "protections": [{ "branch": "main", "requirePullRequest": true }] }
+  },
+  "steps": [
+    {
+      "instruction": "このチームは **GitHub Flow** です。検索機能の作業ブランチ feature/search を作って移動しよう（左上のルールも確認）。",
+      "hints": ["作業は main から作ったブランチで", "git switch -c feature/search"],
+      "answer": ["git switch -c feature/search"],
+      "check": [{ "type": "headOn", "branch": "feature/search" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "search.js を作ってコミットし、push して PR を作ろう。",
+      "hints": ["echo → add → commit → git push -u origin feature/search → gh pr create", "gh pr create --title \"検索機能\" --body \"検索を追加\""],
+      "answer": ["echo \"search()\" > search.js", "git add search.js", "git commit -m \"add search\"", "git push -u origin feature/search", "gh pr create --title \"検索機能\" --body \"検索を追加\""],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "open" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "レビューが済んだ想定で、PR を squash でマージしてブランチを消し、main を最新にしよう。",
+      "hints": ["gh pr merge --squash --delete-branch → git pull"],
+      "answer": ["gh pr merge --squash --delete-branch", "git pull"],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "merged" }, { "type": "remoteEquals", "ref": "main" }, { "type": "noViolations" }],
+      "explain": "GitHub Flow の1周です。main は常に「レビュー済みで動くもの」だけになり、いつでもデプロイできます。"
+    },
+    {
+      "type": "quiz",
+      "question": "トランクベース開発で、まだ完成していない機能をこまめに main に入れるための工夫は？",
+      "choices": ["完成するまで長いブランチで作業する", "フィーチャーフラグで、未完成の機能をユーザーから隠しておく", "main への push を禁止する"],
+      "answer": 1,
+      "explain": "トランクベースでは、コードは main に入れつつ、フラグで機能の ON / OFF を切り替えます。ブランチを短命にできるので、大きなコンフリクトが起きにくくなります。"
+    },
+    {
+      "type": "quiz",
+      "question": "GitHub Flow が向いているのはどんなチーム？",
+      "choices": ["Web サービスなど、こまめにデプロイするチーム", "年に1回だけバージョンを出す製品", "ブランチを一切使わないチーム"],
+      "answer": 0,
+      "explain": "main と短いブランチだけのシンプルな戦略です。リリースの版を並行して保守する必要がある製品なら Git Flow が候補になります。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "pull", "merge"]
+}

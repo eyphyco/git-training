@@ -1,0 +1,53 @@
+{
+  "id": "ch07-02",
+  "title": "Git Flow：develop・release・tag",
+  "level": "advanced",
+  "doc": "02-git-flow.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# App\n", "VERSION": "0.9.0\n" } }],
+    "branches": { "main": "c1", "develop": "c1" },
+    "head": "develop",
+    "hosting": { "strategy": "git-flow" }
+  },
+  "steps": [
+    {
+      "instruction": "**Git Flow** では機能を develop から作ります。今いる develop から feature/cart を作って移動しよう。",
+      "hints": ["git switch -c feature/cart"],
+      "answer": ["git switch -c feature/cart"],
+      "check": [{ "type": "headOn", "branch": "feature/cart" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "cart.js を作ってコミットし、develop に `--no-ff` でマージしよう（マージコミットを残して「どの機能を入れたか」を分かるようにする）。",
+      "hints": ["コミットしたら git switch develop", "git merge --no-ff feature/cart -m \"Merge branch 'feature/cart' into develop\""],
+      "answer": ["echo \"cart()\" > cart.js", "git add cart.js", "git commit -m \"add cart\"", "git switch develop", "git merge --no-ff feature/cart -m \"Merge branch 'feature/cart' into develop\""],
+      "check": [{ "type": "hasMergeCommit", "ref": "develop" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "リリース準備です。develop から release/1.0.0 を作り、VERSION を 1.0.0 にしてコミットしよう。",
+      "hints": ["git switch -c release/1.0.0", "echo \"1.0.0\" > VERSION → git commit -am \"bump version to 1.0.0\""],
+      "answer": ["git switch -c release/1.0.0", "echo \"1.0.0\" > VERSION", "git commit -am \"bump version to 1.0.0\""],
+      "check": [{ "type": "headOn", "branch": "release/1.0.0" }, { "type": "fileContent", "path": "VERSION", "area": "head", "equals": "1.0.0\n" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "release/1.0.0 を main に `--no-ff` でマージし、注釈付きタグ v1.0.0 を付けよう。",
+      "hints": ["git switch main → git merge --no-ff release/1.0.0 -m \"Release 1.0.0\"", "git tag -a v1.0.0 -m \"1.0.0\""],
+      "answer": ["git switch main", "git merge --no-ff release/1.0.0 -m \"Release 1.0.0\"", "git tag -a v1.0.0 -m \"1.0.0\""],
+      "check": [{ "type": "tagExists", "name": "v1.0.0", "annotated": true, "at": "main" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "最後に release/1.0.0 を develop にもマージして、バージョンの変更を develop に戻そう。",
+      "hints": ["git switch develop → git merge --no-ff release/1.0.0 -m \"Merge branch 'release/1.0.0' into develop\""],
+      "answer": ["git switch develop", "git merge --no-ff release/1.0.0 -m \"Merge branch 'release/1.0.0' into develop\""],
+      "check": [{ "type": "containsCommit", "ref": "develop", "commit": "release/1.0.0" }, { "type": "noViolations" }],
+      "explain": "グラフを見ると、main（リリースの記録）と develop（開発）の2本が並び、release がそれぞれに合流しています。"
+    },
+    {
+      "type": "quiz",
+      "question": "Git Flow で、リリース済みの v1.0.0 に緊急のバグ修正をするとき、hotfix/ ブランチはどこから作る？",
+      "choices": ["develop", "main（リリース済みのもの）", "feature/ ブランチ"],
+      "answer": 1,
+      "explain": "hotfix/ は main から作り、直したら main（＋タグ）と develop の両方にマージします。章末チャレンジでやってみましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "merge", "tag", "show"]
+}

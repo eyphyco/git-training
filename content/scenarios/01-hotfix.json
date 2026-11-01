@@ -1,0 +1,55 @@
+{
+  "id": "sc-01",
+  "title": "リリース直後、本番でバグ発覚",
+  "level": "advanced",
+  "doc": "01-hotfix.md",
+  "scenario": { "summary": "本番のログインが落ちた。hotfix ブランチで直して PR、承認をもらってマージし、タグを付けてリリースする。", "members": ["Sato（リーダー）", "Suzuki"] },
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "release 1.0.0", "files": { "README.md": "# Shop\n", "login.js": "logn()\n", "app.js": "app()\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "hosting": { "strategy": "github-flow", "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1 }] }
+  },
+  "triggers": [
+    { "id": "alert", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Sato", "text": "🚨 本番でログインが落ちています！ login.js の logn は login の typo みたいです。hotfix/login ブランチで直して PR をお願いします。" }] },
+    {
+      "id": "docs",
+      "when": { "type": "command", "match": "git commit" },
+      "actions": [
+        { "type": "teammatePush", "author": "Suzuki", "message": "update docs", "files": { "docs.md": "# Docs\n" } },
+        { "type": "message", "from": "Suzuki", "text": "あ、別件のドキュメント修正を main に入れておきました。" }
+      ]
+    },
+    {
+      "id": "approve",
+      "when": { "type": "event", "event": "PR_OPENED" },
+      "actions": [
+        { "type": "review", "author": "Sato", "state": "approved", "body": "確認しました！" },
+        { "type": "message", "from": "Sato", "text": "Approve しました。squash でマージして、ブランチも消しておいてください。" }
+      ]
+    },
+    { "id": "merged", "when": { "type": "event", "event": "PR_MERGED" }, "actions": [{ "type": "message", "from": "Sato", "text": "ありがとう！ 手元の main を最新にして、v1.0.1 のタグを付けて push してください。" }] },
+    { "id": "released", "when": { "type": "check", "check": { "type": "remoteTag", "name": "v1.0.1" } }, "actions": [{ "type": "message", "from": "Sato", "text": "🎉 v1.0.1 をリリースしました。おつかれさまでした！" }] }
+  ],
+  "steps": [
+    {
+      "instruction": "チャットを読んで、hotfix/login ブランチで login.js を直し（`login()`）、push して PR を作ろう。",
+      "hints": ["main は保護されているので直接は直せません。ブランチを作ります", "git switch -c hotfix/login → echo \"login()\" > login.js → git commit -am \"fix login typo\"", "git push -u origin hotfix/login → gh pr create --title \"...\" --body \"...\""],
+      "answer": ["git switch -c hotfix/login", "echo \"login()\" > login.js", "git commit -am \"fix login typo\"", "git push -u origin hotfix/login", "gh pr create --title \"ログインの typo を修正\" --body \"logn → login\""],
+      "check": [{ "type": "prState", "head": "hotfix/login", "state": "open" }, { "type": "fileContent", "path": "login.js", "area": "head", "contains": "login()" }]
+    },
+    {
+      "instruction": "承認されたら、言われたとおりの方式でマージしよう。",
+      "hints": ["squash でマージしてブランチも削除", "gh pr merge --squash --delete-branch"],
+      "answer": ["gh pr merge --squash --delete-branch"],
+      "check": [{ "type": "prState", "head": "hotfix/login", "state": "merged", "method": "squash" }]
+    },
+    {
+      "instruction": "手元の main を最新にし、注釈付きタグ v1.0.1 を付けて push しよう。",
+      "hints": ["git pull → git tag -a v1.0.1 -m \"...\" → git push origin v1.0.1"],
+      "answer": ["git pull", "git tag -a v1.0.1 -m \"hotfix: login\"", "git push origin v1.0.1"],
+      "check": [{ "type": "remoteTag", "name": "v1.0.1" }, { "type": "remoteEquals", "ref": "main" }, { "type": "noViolations" }]
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "merge", "fetch", "pull", "push", "tag", "restore", "reset", "reflog"]
+}
