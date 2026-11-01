@@ -1,15 +1,16 @@
 // 模擬 GitHub 画面の小さな部品。
 import type { ReactNode } from 'react';
 
+// 状態の札：薄い地＋枠＋色付きの文字（Pipeline Dojo の .status と同じ形）
 const TONE = {
-  green: 'bg-emerald-600 text-white',
-  red: 'bg-rose-600 text-white',
-  purple: 'bg-violet-600 text-white',
-  gray: 'bg-slate-500 text-white',
+  green: 'border-emerald-600/30 bg-emerald-500/13 text-emerald-700 dark:text-emerald-300',
+  red: 'border-rose-600/30 bg-rose-500/11 text-rose-700 dark:text-rose-300',
+  purple: 'border-violet-500/35 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  gray: 'border-slate-500/30 bg-slate-500/13 text-slate-600 dark:text-slate-300',
 } as const;
 
 export function Badge({ tone, children }: { tone: keyof typeof TONE; children: ReactNode }) {
-  return <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${TONE[tone]}`}>{children}</span>;
+  return <span className={`inline-block rounded-full border px-2 text-[11px] leading-[1.8] font-bold whitespace-nowrap ${TONE[tone]}`}>{children}</span>;
 }
 
 export function Avatar({ name }: { name: string }) {
@@ -23,8 +24,8 @@ export function Avatar({ name }: { name: string }) {
 
 export function Box({ title, children }: { title?: ReactNode; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-white/60 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-      {title && <div className="border-b border-white/60 bg-white/40 px-3 py-1.5 text-xs font-bold dark:border-white/10 dark:bg-white/5">{title}</div>}
+    <section className="overflow-hidden rounded-[14px] border border-[var(--edge)] bg-[var(--raised)] shadow-[0_1px_2px_rgb(30_50_90/0.06)]">
+      {title && <div className="border-b border-[var(--line)] px-3 py-1.5 text-xs font-bold">{title}</div>}
       <div className="px-3 py-2">{children}</div>
     </section>
   );

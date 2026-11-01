@@ -39,7 +39,7 @@ export function WorkspaceLayout({ tab, left, session, resetKey }: { tab: MobileT
   const pane = (t: MobileTab) => (tab === t ? 'flex' : 'hidden');
   return (
     <div className="flex min-h-0 flex-1 gap-3 p-2 lg:grid lg:grid-cols-[minmax(320px,400px)_1fr] lg:p-3">
-      <div className={`${pane('task')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>{left}</div>
+      <div className={`${pane('task')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-3xl lg:flex`}>{left}</div>
       <Workspace key={resetKey} session={session} pane={pane} />
     </div>
   );
@@ -81,11 +81,11 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
 
   return (
     <div
-      className={`flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid ${view === 'github' ? 'lg:grid-rows-[minmax(120px,0.55fr)_auto_minmax(280px,1.7fr)_minmax(180px,0.75fr)]' : 'lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]'}`}
+      className={`flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid ${view === 'github' ? 'lg:grid-rows-[minmax(180px,0.75fr)_auto_minmax(260px,1.5fr)_minmax(170px,0.7fr)]' : 'lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]'}`}
     >
-      <div className={`${pane('visual')} glass min-h-[180px] flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
+      <div className={`${pane('visual')} glass min-h-[180px] flex-1 flex-col overflow-hidden rounded-3xl lg:flex`}>
         <ReplayBar timeline={session.timeline} index={replaying ? replay : null} onChange={setReplay} />
-        <div className="relative min-h-0 flex-1">
+        <div className="paper relative min-h-0 flex-1">
           {replaying && <div className="absolute top-2 right-3 z-10 rounded-full bg-sky-500/80 px-2 py-0.5 text-xs text-white">再生中（操作はできません）</div>}
           {preview && !replaying && (
             <div className="absolute right-3 bottom-6 left-3 z-10 rounded-xl border border-violet-300/70 bg-violet-100/80 px-2 py-1 text-xs text-violet-900 backdrop-blur-md dark:bg-violet-500/20 dark:text-violet-100" data-testid="preview-banner">
@@ -103,7 +103,7 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
         <span className="shrink-0 font-bold text-amber-700 dark:text-amber-300">今何が起きた？</span>
         <span>{session.summary ?? 'コマンドを実行すると、ここに何が起きたかが表示されます。'}</span>
       </div>
-      <div className={`${pane('visual')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
+      <div className={`${pane('visual')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-3xl lg:flex`}>
         <div className="flex gap-1 border-b border-white/40 px-2 pt-1.5 text-xs dark:border-white/10">
           {(
             [
@@ -142,7 +142,7 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
           )}
         </div>
       </div>
-      <div className={`${pane('terminal')} glass-dark min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
+      <div className={`${pane('terminal')} glass-dark min-h-0 flex-1 flex-col overflow-hidden rounded-3xl lg:flex`}>
         <div className="min-h-0 flex-1">
           <Terminal repo={repo} />
         </div>
@@ -154,7 +154,7 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
 
 export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <header className="glass mx-2 mt-2 flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2 lg:mx-3 lg:mt-3">
+    <header className="glass mx-2 mt-2 flex flex-wrap items-center gap-2 rounded-3xl px-4 py-2 lg:mx-3 lg:mt-3">
       <a href="#/" className="text-sm font-bold">
         Git Training
       </a>

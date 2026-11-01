@@ -51,7 +51,7 @@ function Column({ preset, side, testid }: { preset: ComparePreset; side: Side; t
   };
 
   return (
-    <div className="glass flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl" data-testid={testid}>
+    <div className="glass flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl" data-testid={testid}>
       <div className="flex flex-wrap items-center gap-2 border-b border-white/40 px-3 py-2 dark:border-white/10">
         <span className="font-bold">{side.label}</span>
         <span className="ml-auto" />

@@ -117,7 +117,7 @@ export default function Editor({ repo, pending, path, onSelect, onSave }: Props)
                   削除
                 </button>
               )}
-              <button type="button" onClick={save} disabled={!canSave} className="rounded bg-sky-600 px-2 py-0.5 text-white disabled:opacity-40" data-testid="editor-save">
+              <button type="button" onClick={save} disabled={!canSave} className="btn-primary px-2.5 py-0.5" data-testid="editor-save">
                 保存（Ctrl+S）
               </button>
             </div>

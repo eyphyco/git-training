@@ -3,7 +3,75 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-sans: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'Cascadia Code', 'Cascadia Mono', Consolas, 'SFMono-Regular', Menlo, 'Noto Sans Mono', monospace;
+  /* 強調色（選択中のタブ・リンク）は Pipeline Dojo の青に寄せる */
+  --color-sky-300: #8cb0ff;
+  --color-sky-400: #5b82ee;
+  --color-sky-500: #3a63e0;
+  --color-sky-600: #2456d6;
+  --color-sky-700: #1d47b8;
+}
+
+/*
+  見た目は Pipeline Dojo（eyphyco/pipeline-dojo）に合わせる。
+    - ぼかした明るい下地（SVG）の上に、すりガラスの板が浮く
+    - 板の縁は白い細線（光の反射）、影は青灰の広い影
+    - 色は青〜紫。主な操作のボタンだけ紫 → 青のグラデーション
+    - グラフや図の紙は不透明（下地が透けると線と文字の濃さが場所で変わる）
+*/
+:root {
+  --bg: #e3ebf5;
+  --surface: rgb(255 255 255 / 0.56);
+  --raised: rgb(255 255 255 / 0.8);
+  --surface-2: rgb(230 236 245 / 0.7);
+  --paper: #fbfcfe;
+  --edge: rgb(255 255 255 / 0.85);
+  --line: rgb(30 41 70 / 0.12);
+  --line-strong: rgb(30 41 70 / 0.2);
+  --ink: #18203a;
+  --muted: #454f69;
+  --accent: #2456d6;
+  --accent-soft: rgb(59 110 246 / 0.12);
+  --accent-line: rgb(59 110 246 / 0.34);
+  --veil: rgb(236 242 250 / 0.25);
+  --bg-photo: url('./assets/backdrop-light.svg');
+  --g-primary: linear-gradient(100deg, #7048e8 0%, #5b5ce6 45%, #2f6fe0 100%);
+  --g-primary-hover: linear-gradient(100deg, #6239dc 0%, #4f4fdc 45%, #2562d6 100%);
+  --shadow: 0 1px 2px rgb(30 50 90 / 0.06), 0 14px 38px -16px rgb(30 50 90 / 0.28);
+  --shadow-small: 0 1px 2px rgb(30 50 90 / 0.06);
+  --glass-blur: 22px;
+}
+.dark {
+  --bg: #0d1427;
+  --surface: rgb(22 30 52 / 0.62);
+  --raised: rgb(40 50 80 / 0.66);
+  --surface-2: rgb(8 12 26 / 0.45);
+  --paper: #151c30;
+  --edge: rgb(255 255 255 / 0.12);
+  --line: rgb(226 232 255 / 0.12);
+  --line-strong: rgb(226 232 255 / 0.22);
+  --ink: #e9eef9;
+  --muted: #b0bad0;
+  --accent: #8cb0ff;
+  --accent-soft: rgb(120 160 255 / 0.16);
+  --accent-line: rgb(120 160 255 / 0.36);
+  --veil: rgb(10 15 30 / 0.2);
+  --bg-photo: url('./assets/backdrop-dark.svg');
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 38px -16px rgb(0 0 0 / 0.65);
+  --shadow-small: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+/* 透明効果を減らす設定では、ガラスをやめて不透明な板にする */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --surface: #f4f7fb;
+    --raised: #ffffff;
+    --glass-blur: 0px;
+  }
+  .dark {
+    --surface: #182037;
+    --raised: #222b45;
+  }
 }
 
 html,
@@ -13,39 +81,101 @@ body,
 }
 
 body {
-  @apply text-slate-800 dark:text-slate-100;
-  background:
-    radial-gradient(40rem 30rem at 10% 0%, rgb(56 189 248 / 0.35), transparent 70%),
-    radial-gradient(36rem 28rem at 95% 15%, rgb(167 139 250 / 0.35), transparent 70%),
-    radial-gradient(44rem 32rem at 60% 105%, rgb(244 114 182 / 0.25), transparent 70%),
-    linear-gradient(160deg, #eef4ff 0%, #f5f0ff 50%, #fdf2f8 100%);
-  background-attachment: fixed;
-}
-.dark body {
-  background:
-    radial-gradient(40rem 30rem at 10% 0%, rgb(14 165 233 / 0.28), transparent 70%),
-    radial-gradient(36rem 28rem at 95% 15%, rgb(139 92 246 / 0.3), transparent 70%),
-    radial-gradient(44rem 32rem at 60% 105%, rgb(236 72 153 / 0.18), transparent 70%),
-    linear-gradient(160deg, #0b1023 0%, #120d2a 55%, #1a0f24 100%);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--veil), var(--veil)), var(--bg-photo);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
-/* ガラス風（すりガラスの半透明パネル）。背景のグラデーションがぼけて透ける */
+/* すりガラスの板。ぼかしは外側の板にだけ掛ける（入れ子で何枚も掛けると重くなる） */
 @utility glass {
-  @apply border border-white/50 bg-white/45 shadow-[0_8px_32px_rgb(31_38_135/0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/45 dark:shadow-[0_8px_32px_rgb(0_0_0/0.35)];
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow: var(--shadow), inset 0 1px 0 0 var(--edge);
 }
 @utility glass-strong {
-  @apply border border-white/60 bg-white/75 shadow-[0_12px_40px_rgb(31_38_135/0.18)] backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/80;
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow: var(--shadow), inset 0 1px 0 0 var(--edge);
 }
+/* 板の上に載る白い札のボタン */
 @utility glass-btn {
-  @apply rounded-lg border border-white/60 bg-white/40 shadow-sm backdrop-blur-md transition hover:bg-white/75 disabled:opacity-40 disabled:hover:bg-white/40 dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/15;
+  border-radius: 10px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-small), inset 0 1px 0 0 var(--edge);
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  &:hover:not(:disabled) {
+    border-color: var(--accent-line);
+    color: var(--accent);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+/* 1画面の主な操作だけに使う、紫 → 青のグラデーションのボタン */
+@utility btn-primary {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-image: var(--g-primary);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.28), 0 8px 22px -10px rgb(88 80 230 / 0.7);
+  &:hover:not(:disabled) {
+    background-image: var(--g-primary-hover);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 @utility glass-input {
-  @apply rounded-lg border border-white/60 bg-white/50 px-2 outline-none backdrop-blur-md placeholder:text-slate-400 focus:border-sky-400 dark:border-white/15 dark:bg-white/5;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding-inline: 0.5rem;
+  outline: none;
+  &:focus {
+    border-color: var(--accent);
+  }
+  &::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+  }
 }
 /* ターミナルは暗いガラス */
 @utility glass-dark {
-  @apply border border-white/10 bg-slate-950/80 backdrop-blur-xl;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(13 20 39 / 0.86);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow);
+}
+/* グラフ・図解の紙。両テーマとも不透明 */
+@utility paper {
+  background: var(--paper);
+}
+/* 見出しの上の小さなラベル（PIPELINE DOJO の eyebrow と同じ） */
+@utility eyebrow {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent);
 }
 
 /* 用語の点線下線（ホバー解説の目印） */
@@ -74,24 +204,31 @@ body {
   @apply list-decimal pl-5;
 }
 .prose-lesson code {
-  @apply rounded bg-slate-900/10 px-1 font-mono text-[0.85em] dark:bg-white/10;
+  @apply rounded-md px-1 font-mono text-[0.85em];
+  background: var(--surface-2);
+  border: 1px solid var(--line);
 }
 .prose-lesson pre {
   @apply overflow-x-auto rounded-lg bg-slate-950/80 p-3 text-slate-100;
 }
 .prose-lesson pre code {
   @apply bg-transparent p-0;
+  border: 0;
 }
 .prose-lesson table {
   @apply w-full border-collapse;
 }
 .prose-lesson th,
 .prose-lesson td {
-  @apply border border-white/60 px-2 py-1 text-left align-top dark:border-white/10;
+  @apply px-2 py-1 text-left align-top;
+  border-bottom: 1px solid var(--line);
 }
 .prose-lesson th {
-  @apply bg-white/50 dark:bg-white/5;
+  color: var(--muted);
+  border-bottom-color: var(--line-strong);
 }
 .prose-lesson blockquote {
-  @apply rounded-r-lg border-l-4 border-sky-400 bg-sky-100/50 px-3 py-1 dark:bg-sky-500/10;
+  @apply px-3 py-1;
+  border-left: 2px solid var(--line-strong);
+  color: var(--muted);
 }

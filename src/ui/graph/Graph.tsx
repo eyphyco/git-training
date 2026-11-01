@@ -197,7 +197,7 @@ export function Graph({ repo, highlight = [], compact, previewBase }: Props) {
           const y = ny(n.lane) - R - 6 - PILL_H - i * (PILL_H + 3);
           const style =
             l.kind === 'head'
-              ? { fill: l.detached ? '#ea580c' : '#1e293b', stroke: 'none', text: 'white' }
+              ? { fill: l.detached ? '#ea580c' : 'var(--ink)', stroke: 'none', text: l.detached ? 'white' : 'var(--paper)' }
               : l.kind === 'remote'
                 ? { fill: 'transparent', stroke: '#64748b', text: '#64748b' }
                 : { fill: l.current ? laneColor(n.lane) : 'white', stroke: laneColor(n.lane), text: l.current ? 'white' : laneColor(n.lane) };

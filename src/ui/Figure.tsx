@@ -26,8 +26,8 @@ export function Figure({ id }: { id: string }) {
   const show = fig.show ?? ['graph'];
   const prev = i > 0 ? frames[i - 1].world.local : null;
   return (
-    <figure className="not-prose my-3 overflow-hidden rounded-xl border border-white/60 bg-white/40 backdrop-blur-md dark:border-white/10 dark:bg-white/5" data-testid={`figure-${id}`}>
-      <figcaption className="flex items-center gap-2 border-b border-white/50 px-3 py-1.5 text-xs dark:border-white/10">
+    <figure className="paper not-prose my-3 overflow-hidden rounded-[14px] border border-[var(--line-strong)]" data-testid={`figure-${id}`}>
+      <figcaption className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-1.5 text-xs">
         <span className="font-bold">▶ 図解：{fig.title}</span>
         <span className="ml-auto text-slate-500">
           {i}/{frames.length - 1}
@@ -39,7 +39,7 @@ export function Figure({ id }: { id: string }) {
         </div>
       )}
       {show.includes('areas') && (
-        <div className="h-44 border-t border-white/40 text-[11px] dark:border-white/10">
+        <div className="h-44 border-t border-[var(--line)] text-[11px]">
           <AreaView repo={frame.world.local} remote={frame.world.local.config.remotes?.origin ? frame.world.remotes.origin : undefined} prev={prev} events={[]} seq={i} onCommand={() => {}} onOpenFile={() => {}} />
         </div>
       )}

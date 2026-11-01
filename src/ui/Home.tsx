@@ -12,7 +12,7 @@ function Settings() {
   const importJson = useProgress((s) => s.importJson);
   const file = useRef<HTMLInputElement>(null);
   return (
-    <section className="glass rounded-2xl p-4 text-sm">
+    <section className="glass rounded-3xl p-4 text-sm">
       <h2 className="mb-2 font-bold">設定</h2>
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2">
@@ -76,14 +76,15 @@ export function Home() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-8">
-      <header>
-        <h1 className="text-2xl font-bold">Git Training</h1>
-        <p className="text-sm text-slate-500">Git と GitHub の操作を、動く図で見ながら身につける</p>
+      <header className="space-y-1">
+        <div className="eyebrow">GIT TRAINING</div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Git と GitHub を、動く図で身につける</h1>
+        <p className="text-sm text-[var(--muted)]">ブラウザの中のシミュレータで、コミットからチーム開発・履歴の復旧まで。外部には何も送信しません。</p>
       </header>
 
-      <section className="glass flex flex-wrap items-center gap-3 rounded-2xl p-4">
+      <section className="glass flex flex-wrap items-center gap-3 rounded-3xl p-4">
         {target && (
-          <a href={href.lesson(target)} className="rounded-xl bg-gradient-to-r from-sky-500 to-violet-500 px-5 py-3 font-bold text-white shadow-lg shadow-sky-500/30 transition hover:brightness-110" data-testid="resume">
+          <a href={href.lesson(target)} className="btn-primary px-5 py-3" data-testid="resume">
             {resume ? '続きから再開' : doneCount ? '次のレッスンへ' : 'はじめる'} → {lessons[target].title}
           </a>
         )}
