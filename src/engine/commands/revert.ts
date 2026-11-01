@@ -7,7 +7,7 @@ import { computeStatus } from '../model/status';
 export function pickCommand(op: 'cherry-pick' | 'revert'): CommandDef {
   return {
     name: op,
-    spec: { short: { n: 'no-commit', e: 'edit', m: 'mainline' }, valued: ['mainline'], long: ['continue', 'abort', 'skip', 'no-edit', 'quit'] },
+    spec: { short: { n: 'no-commit', e: 'edit', m: 'mainline', ...(op === 'cherry-pick' ? { x: 'x' } : {}) }, valued: ['mainline'], long: ['continue', 'abort', 'skip', 'no-edit', 'quit'] },
     run(ctx) {
       const { opts, positional } = ctx.args;
       if (opts.continue) return continueSequence(ctx, op);
@@ -25,7 +25,7 @@ export function pickCommand(op: 'cherry-pick' | 'revert'): CommandDef {
       });
       if (computeStatus(ctx.repo).staged.length)
         fail(`error: your local changes would be overwritten by ${op}.\nhint: commit your changes or stash them to proceed.\nfatal: ${op} failed`, 'ステージに未コミットの変更があります。先にコミットするか git stash で退避しましょう。');
-      startSequence(ctx, op, oids.map((oid) => ({ action: 'pick', oid })));
+      startSequence(ctx, op, oids.map((oid) => ({ action: 'pick', oid })), opts.x ? { recordOrigin: true } : {});
       runSequence(ctx);
     },
   };

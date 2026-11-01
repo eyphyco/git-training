@@ -1,0 +1,87 @@
+{
+  "id": "sc-04",
+  "title": "レビューで修正を頼まれた",
+  "level": "advanced",
+  "doc": "04-review.md",
+  "scenario": { "summary": "PR に修正依頼が来た。fixup コミットと autosquash で履歴をきれいに直し、--force-with-lease で安全に push する。途中で同僚も同じブランチに push してくる。", "members": ["Tanaka（レビュアー）", "Suzuki"] },
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "app.js": "app()\n" } },
+      { "id": "f1", "parent": "c1", "msg": "add login form", "files": { "login.html": "<form>\n  <input name=user>\n</form>\n" } },
+      { "id": "f2", "parent": "f1", "msg": "add login api", "files": { "api.js": "post('/login')\n" } }
+    ],
+    "branches": { "main": "c1", "feature/login": "f2" },
+    "head": "feature/login",
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1", "feature/login": "f2" } } },
+    "hosting": { "strategy": "github-flow", "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1 }] }
+  },
+  "triggers": [
+    { "id": "ask", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Tanaka", "text": "feature/login、push 済みですね。PR を作ってもらえればレビューします！" }] },
+    {
+      "id": "review",
+      "when": { "type": "event", "event": "PR_OPENED" },
+      "actions": [
+        { "type": "review", "author": "Tanaka", "state": "changes_requested", "body": "1点だけお願いします。", "comments": [{ "path": "login.html", "line": 2, "body": "required を付けて、未入力では送れないようにしてください。" }] },
+        { "type": "message", "from": "Tanaka", "text": "修正依頼を出しました（GitHub タブの PR を見てください）。直しは「add login form」のコミットに入れたいので、fixup コミットにして autosquash でまとめてから push してください。rebase and merge で、コミットをそのまま main に並べたいので。" }
+      ]
+    },
+    {
+      "id": "mate",
+      "after": "review",
+      "when": { "type": "command", "match": "git rebase" },
+      "actions": [
+        { "type": "teammatePush", "author": "Suzuki", "branch": "feature/login", "message": "add login styles", "files": { "login.css": "form { margin: 0; }\n" } },
+        { "type": "message", "from": "Suzuki", "text": "feature/login にログイン画面のスタイルを push しておきました！ 消さないでくださいね。" }
+      ]
+    },
+    {
+      "id": "approve",
+      "after": "mate",
+      "when": { "type": "event", "event": "PUSHED" },
+      "actions": [
+        { "type": "review", "author": "Tanaka", "state": "approved", "body": "直りましたね！" },
+        { "type": "message", "from": "Tanaka", "text": "Approve しました。rebase and merge でマージして、ブランチも消してください。" }
+      ]
+    },
+    { "id": "merged", "when": { "type": "event", "event": "PR_MERGED" }, "actions": [{ "type": "message", "from": "Tanaka", "text": "マージありがとうございます。履歴もきれいです 👍" }] }
+  ],
+  "steps": [
+    {
+      "instruction": "feature/login から main への PR を作ろう。",
+      "hints": ["gh pr create --title \"...\" --body \"...\""],
+      "answer": ["gh pr create --title \"ログイン画面\" --body \"フォームと API を追加\""],
+      "check": [{ "type": "prState", "head": "feature/login", "state": "open" }]
+    },
+    {
+      "instruction": "レビューの指摘どおり login.html の input に required を付け、「add login form」を直す fixup コミットにして、autosquash でまとめよう。",
+      "hints": ["login.html の2行目を「  <input name=user required>」に（エディタタブでも echo でも OK）", "git commit -a --fixup HEAD~1 で「fixup! add login form」というコミットができます", "git rebase --autosquash main（-i を付けると、並べ替えた todo を確かめてから実行できます）"],
+      "answer": ["echo \"<form>\" > login.html", "echo \"  <input name=user required>\" >> login.html", "echo \"</form>\" >> login.html", "git commit -a --fixup HEAD~1", "git rebase --autosquash main"],
+      "check": [
+        { "type": "fileContent", "path": "login.html", "area": "head", "contains": "required" },
+        { "type": "commitCount", "ref": "feature/login", "count": 3 },
+        { "type": "inProgress", "op": null }
+      ],
+      "explain": "fixup コミットは「どのコミットを直すものか」を件名に持っています。autosquash がそれを見て、元のコミットの直後に並べてまとめてくれます。"
+    },
+    {
+      "instruction": "履歴を書き換えたので、普通の push は rejected になります。`--force-with-lease` で push しよう。止められたら理由を確かめ、Suzuki さんのコミットを消さずに push し直します。",
+      "hints": ["git push --force-with-lease → stale info で止まるのは、最後に fetch してから誰かが push したから", "git fetch して git log origin/feature/login で Suzuki さんのコミットを確かめる", "git cherry-pick origin/feature/login で取り込んでから、もう一度 git push --force-with-lease"],
+      "answer": ["git push --force-with-lease", "git fetch", "git log --oneline origin/feature/login", "git cherry-pick origin/feature/login", "git push --force-with-lease"],
+      "expectError": true,
+      "check": [
+        { "type": "remoteEquals", "ref": "feature/login" },
+        { "type": "fileContent", "path": "login.css", "area": "head", "exists": true },
+        { "type": "fileContent", "path": "login.html", "area": "head", "contains": "required" },
+        { "type": "commitCount", "ref": "feature/login", "count": 4 }
+      ],
+      "explain": "--force-with-lease は「最後に fetch したときから動いていなければ上書きする」push です。fetch した後は通ってしまうので、fetch したら必ず中身を確かめ、必要なコミットを取り込んでから push します。"
+    },
+    {
+      "instruction": "承認されたら、rebase and merge でマージしよう。",
+      "hints": ["gh pr merge --rebase --delete-branch"],
+      "answer": ["gh pr merge --rebase --delete-branch"],
+      "check": [{ "type": "prState", "head": "feature/login", "state": "merged", "method": "rebase", "approvedBy": "tanaka" }, { "type": "noViolations" }]
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "rebase", "cherry-pick", "fetch", "pull", "push", "restore", "reset", "reflog"]
+}

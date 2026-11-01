@@ -4,3 +4,6 @@ coverage/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# Claude Code の個人用設定（権限ルールなど）
+.claude/settings.local.json

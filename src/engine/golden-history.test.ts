@@ -78,6 +78,48 @@ describe.skipIf(!hasGit)('実 Git との比較（履歴操作）', () => {
   });
 });
 
+describe.skipIf(!hasGit)('実 Git との比較（シナリオで使う操作）', () => {
+  it('commit --fixup と rebase --autosquash', () => {
+    const { real, sim } = runBoth(
+      [
+        { write: { 'a.txt': 'a\n' }, git: ['init', 'add .', 'commit -m init', 'switch -c feature'] },
+        { write: { 'login.js': 'logn()\n' }, git: ['add .', 'commit -m "add login"'] },
+        { write: { 'logout.js': 'out()\n' }, git: ['add .', 'commit -m "add logout"'] },
+        { write: { 'login.js': 'login()\n' }, git: ['add .', 'commit --fixup HEAD~1', 'rebase --autosquash main'] },
+      ],
+      ['main', 'feature'],
+    );
+    expect(sim).toEqual(real);
+  });
+
+  it('cherry-pick -x（衝突を解消して --continue）と merge --no-ff', () => {
+    const { real, sim } = runBoth(
+      [
+        { write: { 'app.js': 'v1\nbug\n' }, git: ['init', 'add .', 'commit -m "release 1.0"', 'tag v1.0', 'branch release/1.x'] },
+        { write: { 'app.js': 'v2\nbug\n' }, git: ['commit -am "start 2.0"'] },
+        { write: { 'app.js': 'v2\nfixed\n' }, git: ['commit -am "fix bug"', 'switch release/1.x'] },
+        { git: ['cherry-pick -x main'], conflict: true },
+        { write: { 'app.js': 'v1\nfixed\n' }, git: ['add app.js', 'cherry-pick --continue', 'tag -a v1.0.1 -m "1.0.1"', 'switch main', 'switch -c topic'] },
+        { write: { 't.txt': 't\n' }, git: ['add .', 'commit -m topic', 'switch main', 'merge --no-ff --no-edit topic'] },
+      ],
+      ['main', 'release/1.x', 'refs/tags/v1.0.1'],
+    );
+    expect(sim).toEqual(real);
+  });
+
+  it('cat-file・ls-tree・rev-parse の出力', () => {
+    const { out } = runBoth(
+      [
+        { write: { 'README.md': '# app\n', 'src/main.js': 'main()\n' }, git: ['init', 'add .', 'commit -m init', 'tag -a v1 -m "first"'] },
+        { write: { 'src/main.js': 'main(2)\n' }, git: ['commit -am second'] },
+      ],
+      [],
+      ['cat-file -p HEAD', 'cat-file -t HEAD^{tree}', 'cat-file -s HEAD:src/main.js', 'cat-file -p v1', 'ls-tree HEAD', 'ls-tree -r HEAD', 'rev-parse HEAD~1', 'rev-parse --short HEAD', 'rev-parse --abbrev-ref HEAD'],
+    );
+    expect(out.sim).toEqual(out.real);
+  });
+});
+
 describe.skipIf(!hasGit)('実 Git との比較（bisect）', () => {
   it('bisect が選ぶコミットの順番', () => {
     const steps = [{ write: { 'n.txt': '1\n' }, git: ['init', 'add .', 'commit -m c1'] }];

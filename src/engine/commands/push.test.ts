@@ -36,6 +36,19 @@ describe('git push', () => {
     expect(text(f)).toContain('(forced update)');
     expect(f.world.remotes.origin.refs.heads.main).toBe(base.world.local.refs.heads.main);
   });
+  it('--force-with-lease は、リモートが手元の記録（origin/main）と同じときだけ上書きする', () => {
+    const base = repoWith(setup, ['echo mine > b', 'git add b', 'git commit -m mine']);
+    const t = teammatePush(base.world, { author: 'Sato', message: 'theirs', files: { c: 'c\n' } });
+    const stale = execute(t.world, 'git push --force-with-lease');
+    expect(stale.ok).toBe(false);
+    expect(text(stale)).toContain(' ! [rejected]        main -> main (stale info)');
+    expect(stale.world.remotes.origin.refs.heads.main).toBe(t.world.remotes.origin.refs.heads.main);
+    // fetch して記録を新しくすると通る（同僚のコミットは消える。だから fetch 後は log で確かめてから）
+    const fetched = execute(t.world, 'git fetch');
+    const ok = execute(fetched.world, 'git push --force-with-lease');
+    expect(text(ok)).toContain('(forced update)');
+    expect(ok.world.remotes.origin.refs.heads.main).toBe(base.world.local.refs.heads.main);
+  });
   it('--delete でリモートブランチを消す', () => {
     const r = repoWith({ ...setup, remotes: { origin: { branches: { main: 'c1', old: 'c1' } } } }, ['git push origin --delete old']);
     expect(r.world.remotes.origin.refs.heads.old).toBeUndefined();

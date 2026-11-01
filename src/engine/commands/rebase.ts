@@ -1,6 +1,6 @@
 import { fail, unsupported, type CommandDef } from '../command';
 import { lineOps } from '../merge/diff';
-import { commitFiles, getBlob, getCommit, short } from '../model/objects';
+import { commitFiles, getBlob, getCommit, short, subject } from '../model/objects';
 import { ancestors, currentBranch, headOid, isAncestor, resolveRev } from '../model/refs';
 import { computeStatus } from '../model/status';
 import type { Oid, RepoState, TodoItem } from '../model/types';
@@ -34,6 +34,29 @@ function commitsToReplay(repo: RepoState, head: Oid, upstream: Oid): Oid[] {
   return out.filter((o) => getCommit(repo, o).parents.length <= 1);
 }
 
+/** --autosquash：「fixup! 件名」「squash! 件名」のコミットを、その件名のコミットの直後へ移して fixup / squash にする */
+function autosquash(repo: RepoState, picks: Oid[]): TodoItem[] {
+  const subj = (o: Oid) => subject(getCommit(repo, o).message);
+  const items: TodoItem[] = [];
+  const moved = new Set<Oid>();
+  for (const oid of picks) {
+    if (moved.has(oid)) continue;
+    items.push({ action: 'pick', oid });
+    // 後ろにある、このコミット（またはそれに混ぜるコミット）宛ての fixup! / squash! を続けて並べる
+    const targets = [subj(oid)];
+    for (const o of picks) {
+      if (moved.has(o) || o === oid) continue;
+      const m = subj(o).match(/^(fixup|squash)! (.*)$/);
+      if (m && targets.some((t) => t === m[2] || t.startsWith(m[2]))) {
+        items.push({ action: m[1] as 'fixup' | 'squash', oid: o });
+        moved.add(o);
+        targets.push(subj(o));
+      }
+    }
+  }
+  return items;
+}
+
 export const rebase: CommandDef = {
   name: 'rebase',
   spec: { short: { i: 'interactive' }, valued: ['onto'], long: ['continue', 'abort', 'skip', 'interactive', 'edit-todo', 'root', 'autosquash', 'quit'] },
@@ -43,7 +66,7 @@ export const rebase: CommandDef = {
     if (opts.continue) return continueSequence(ctx, 'rebase');
     if (opts.abort) return abortSequence(ctx, 'rebase');
     if (opts.skip) return skipSequence(ctx, 'rebase');
-    if (opts['edit-todo'] || opts.root || opts.autosquash || opts.quit) unsupported(`rebase --${['edit-todo', 'root', 'autosquash', 'quit'].find((k) => opts[k])}`, 'rebase の細かい動きを変えるオプションです');
+    if (opts['edit-todo'] || opts.root || opts.quit) unsupported(`rebase --${['edit-todo', 'root', 'quit'].find((k) => opts[k])}`, 'rebase の細かい動きを変えるオプションです');
     if (repo.inProgress)
       fail(
         sequenceOf(ctx, 'rebase')
@@ -77,7 +100,7 @@ export const rebase: CommandDef = {
     if (s.staged.length) fail('error: cannot rebase: Your index contains uncommitted changes.\nerror: Please commit or stash them.', 'ステージに未コミットの変更があります。先にコミットするか git stash で退避しましょう。');
 
     const interactive = Boolean(opts.interactive);
-    if (!interactive && !ontoName && isAncestor(repo, upstream, head)) {
+    if (!interactive && !ontoName && !opts.autosquash && isAncestor(repo, upstream, head)) {
       ctx.out(`Current branch ${branch ?? 'HEAD'} is up to date.`);
       return;
     }
@@ -86,7 +109,7 @@ export const rebase: CommandDef = {
     const all = commitsToReplay(repo, head, upstream);
     const picks = all.filter((o) => !upstreamKeys.has(patchKey(repo, o)));
     for (const o of all.filter((x) => !picks.includes(x))) ctx.out(`warning: skipped previously applied commit ${short(o)}`, 'yellow');
-    const items: TodoItem[] = picks.map((oid) => ({ action: 'pick', oid }));
+    const items: TodoItem[] = opts.autosquash ? autosquash(repo, picks) : picks.map((oid) => ({ action: 'pick', oid }));
     const seq = startSequence(ctx, 'rebase', interactive ? [] : items, { headName: branch, onto, interactive });
     if (interactive) {
       seq.stopped = 'editor';

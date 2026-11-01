@@ -68,4 +68,8 @@ describe('実戦シナリオのきっかけとスコア', () => {
     const sc = scoreOf(undo(s), 1);
     expect(sc.score).toBe(100 - 5 - 15 - 2);
   });
+  it('--force-with-lease は減点しない（自分のブランチを書き換えた後の正しい送り方）', () => {
+    const { s } = run(l, ['echo b > b.txt', 'git add b.txt', 'git commit -m b', 'git push --force-with-lease', 'git push -f', 'git push origin +main']);
+    expect(scoreOf(s, 0).items).toEqual([{ label: 'force push（--force）2 回', points: -30 }]);
+  });
 });

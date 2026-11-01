@@ -199,12 +199,13 @@ function fireTriggers(lesson: Lesson, s: Session, command: string | null, events
 
 /** 実戦シナリオのスコア（100 点から減点。時間は数えない） */
 export function scoreOf(s: Session, hintsUsed: number): { score: number; items: { label: string; points: number }[] } {
-  const force = s.commands.filter((c) => /^git push\b.*(\s(-f|--force|--force-with-lease)\b|\s\+)/.test(c)).length;
+  // --force-with-lease は他人のコミットを消さないので減点しない
+  const force = s.commands.filter((c) => /^git push\b.*(\s(-f|--force)(?=\s|$)|\s\+)/.test(c)).length;
   const violations = s.world.hosting.violations?.length ?? 0;
   const items = [
     { label: `ヒント ${hintsUsed} 回`, points: -5 * hintsUsed },
     { label: `ルール違反 ${violations} 件`, points: -10 * violations },
-    { label: `force push ${force} 回`, points: -15 * force },
+    { label: `force push（--force）${force} 回`, points: -15 * force },
     { label: `Undo ${s.undoCount} 回`, points: -2 * s.undoCount },
   ].filter((i) => i.points);
   return { score: Math.max(0, 100 + items.reduce((a, i) => a + i.points, 0)), items };

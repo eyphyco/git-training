@@ -2,7 +2,7 @@ import { fail, unsupported, type CommandDef, type Ctx } from '../command';
 import { commitFiles, getCommit, short, subject, writeBlob, writeCommit, writeTree } from '../model/objects';
 import { formatDate } from './log';
 import { runHook } from '../hooks';
-import { currentBranch, headOid, isAncestor, logRef, setBranch } from '../model/refs';
+import { currentBranch, headOid, isAncestor, logRef, resolveRev, setBranch } from '../model/refs';
 import { computeStatus } from '../model/status';
 import type { Oid, Signature } from '../model/types';
 import { printSummary, treeDiffStat } from '../stat';
@@ -33,7 +33,7 @@ export function writeHeadCommit(ctx: Ctx, c: HeadCommit): Oid {
   const branch = currentBranch(repo);
   const old = headOid(repo);
   moveHead(ctx, oid, `${c.reflog}: ${subject(c.message)}`);
-  ctx.emit({ type: 'COMMIT_CREATED', oid, parents: c.parents, branch, message: c.message });
+  ctx.emit({ type: 'COMMIT_CREATED', oid, parents: [...c.parents], branch, message: c.message });
   ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: old, to: oid, reason: 'commit' });
   return oid;
 }
@@ -52,7 +52,7 @@ export function cleanupMessage(parts: string[]): string {
 
 export const commit: CommandDef = {
   name: 'commit',
-  spec: { short: { m: 'message', a: 'all', q: 'quiet', n: 'no-verify' }, multiple: ['message'], long: ['allow-empty', 'amend', 'no-edit', 'no-verify'] },
+  spec: { short: { m: 'message', a: 'all', q: 'quiet', n: 'no-verify' }, multiple: ['message'], valued: ['fixup'], long: ['allow-empty', 'amend', 'no-edit', 'no-verify'] },
   run(ctx) {
     const repo = ctx.repo;
     const { opts } = ctx.args;
@@ -66,6 +66,12 @@ export const commit: CommandDef = {
         'コンフリクトが残っています。ファイルを直して git add してからコミットしましょう。',
       );
     const messages = (opts.message as string[] | undefined) ?? [];
+    // --fixup <commit>：あとで rebase --autosquash がそのコミットに混ぜる目印の件名を付ける
+    if (opts.fixup) {
+      const target = resolveRev(repo, opts.fixup as string);
+      if (!target) fail(`fatal: could not lookup commit '${opts.fixup}'`, `「${opts.fixup}」というコミットは見つかりません。`);
+      messages.unshift(`fixup! ${subject(getCommit(repo, target).message)}`);
+    }
     if (opts.amend) return amend(ctx, messages, Boolean(opts['no-edit']), Boolean(opts.all), Boolean(opts['no-verify']));
     if (!messages.length && !merging && !seq)
       fail('このサイトではエディタが開けないため、-m でメッセージを指定してください。', '例: git commit -m "README を追加"（実 Git では -m なしだとエディタが開きます）');

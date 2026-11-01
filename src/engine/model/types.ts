@@ -64,6 +64,8 @@ export type SequenceInProgress = InProgressBase & {
   headName?: string | null;
   onto?: Oid;
   interactive?: boolean;
+  /** cherry-pick -x：元のコミット ID をメッセージに書き足す */
+  recordOrigin?: boolean;
   /** rebase -i：エディタで編集中の内容 */
   editor?: { path: Path; text: string; purpose: 'todo' | 'message' };
   /** squash / fixup の連続でまとめているメッセージ */
