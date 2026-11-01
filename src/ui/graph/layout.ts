@@ -22,10 +22,11 @@ export function tips(repo: RepoState): { name: string; oid: Oid; kind: Label['ki
   return out;
 }
 
-export function layoutGraph(repo: RepoState): Layout {
+/** extraTips：ラベルはないが描いておきたいコミット（実行プレビューで「消える」コミットを薄く残す） */
+export function layoutGraph(repo: RepoState, extraTips: Oid[] = []): Layout {
   const head = headOid(repo);
   const roots = tips(repo);
-  const starts = [...roots.map((t) => t.oid), ...(head ? [head] : [])];
+  const starts = [...roots.map((t) => t.oid), ...(head ? [head] : []), ...extraTips.filter((o) => repo.objects[o])];
 
   // 到達できるコミットを集める
   const all = new Set<Oid>();
@@ -74,6 +75,7 @@ export function layoutGraph(repo: RepoState): Layout {
   };
   for (const t of roots) claim(t.oid);
   if (head) claim(head);
+  for (const o of extraTips) if (repo.objects[o]) claim(o);
   // ブランチを消した後のマージ元など、まだレーンのないコミット
   for (const o of [...order].reverse()) if (!lane.has(o)) claim(o);
 

@@ -12,7 +12,7 @@ export type Progress = {
   lessons: Record<LessonId, { status: 'todo' | 'doing' | 'done'; hintsUsed: number; clearedAt?: string }>;
   snapshots: Record<string, World>;
   studyLog: Record<string, number>;
-  settings: { theme: 'light' | 'dark'; animationSpeed: number; /** 学習のゴール日（YYYY-MM-DD）。未設定なら最初の学習日の30日後 */ goalDate?: string };
+  settings: { theme: 'light' | 'dark'; animationSpeed: number; /** 学習のゴール日（YYYY-MM-DD）。未設定なら最初の学習日の30日後 */ goalDate?: string; /** 実行プレビュー（入力中にグラフの変化を予告）を出すか。既定は出す */ preview?: boolean };
   resume?: Resume;
 };
 

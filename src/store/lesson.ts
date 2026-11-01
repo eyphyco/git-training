@@ -15,6 +15,9 @@ type Store = {
   history: string[];
   /** GUI ボタンなどから入力欄に入れたいテキスト */
   pendingInput: string | null;
+  /** ターミナルに入力中のテキスト（実行プレビュー用） */
+  draft: string;
+  setDraft(text: string): void;
   open(lesson: Lesson): void;
   /** フリープレイ：任意の World から始める */
   openWorld(lesson: Lesson, world: World, note: string): void;
@@ -63,6 +66,10 @@ export const useLesson = create<Store>((set, get) => {
     lines: [],
     history: [],
     pendingInput: null,
+    draft: '',
+    setDraft(text) {
+      if (get().draft !== text) set({ draft: text });
+    },
     open(lesson) {
       const progress = useProgress.getState();
       progress.startLesson(lesson.id);
@@ -88,7 +95,7 @@ export const useLesson = create<Store>((set, get) => {
       const { session: next, result } = S.runCommand(lesson, session, input);
       const cleared = result.events.some((e) => e.type === 'CLEAR');
       const out = result.output.map((o) => line('out', o.text, o.tone));
-      set({ lines: cleared ? [] : [...lines, echo, ...out].slice(-1000), history: [...history, input.trim()].slice(-100) });
+      set({ lines: cleared ? [] : [...lines, echo, ...out].slice(-1000), history: [...history, input.trim()].slice(-100), draft: '' });
       commit(next);
     },
     save(path, content) {

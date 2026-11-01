@@ -1,8 +1,10 @@
 // レッスン画面とフリープレイで共通の作業領域：グラフ（再生付き）・「今何が起きた？」・4エリア / エディタ・ターミナル。
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { pendingEditor } from '../engine/editor';
 import type { Session } from '../lesson/session';
 import { useLesson } from '../store/lesson';
+import { useProgress } from '../store/progress';
+import { previewOf } from './preview';
 import { AreaView } from './AreaView';
 import { Graph } from './graph/Graph';
 import { GuiButtons } from './GuiButtons';
@@ -62,6 +64,11 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
     if (session.lastEvents.some((e) => e.type === 'PR_OPENED' || e.type === 'PR_REVIEWED')) setView('github');
   }, [session.seq, session.lastEvents]);
   const pending = pendingEditor(session.world);
+  const draft = useLesson((s) => s.draft);
+  const allowed = useLesson((s) => s.lesson?.allowedCommands);
+  const previewOn = useProgress((s) => s.settings.preview ?? true);
+  const setSettings = useProgress((s) => s.setSettings);
+  const preview = useMemo(() => (previewOn && replay === null ? previewOf(session.world, draft, allowed) : null), [previewOn, replay, session.world, draft, allowed]);
   const hasGitHub = !!session.world.remotes.origin;
   const openPrs = session.world.hosting.pullRequests.filter((p) => p.state === 'open').length;
 
@@ -78,7 +85,16 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
         <ReplayBar timeline={session.timeline} index={replaying ? replay : null} onChange={setReplay} />
         <div className="relative min-h-0 flex-1">
           {replaying && <div className="absolute top-2 right-3 z-10 rounded-full bg-sky-500/80 px-2 py-0.5 text-xs text-white">再生中（操作はできません）</div>}
-          <Graph repo={shown.local} highlight={replaying ? [] : highlight} />
+          {preview && !replaying && (
+            <div className="absolute top-2 right-3 left-3 z-10 rounded-xl border border-violet-300/70 bg-violet-100/80 px-2 py-1 text-xs text-violet-900 backdrop-blur-md dark:bg-violet-500/20 dark:text-violet-100" data-testid="preview-banner">
+              👁 プレビュー：<code className="font-bold">{draft.trim()}</code> を Enter で実行するとこうなります（点線 = 新しくできるコミット、薄い × = どのブランチからも辿れなくなるコミット）
+            </div>
+          )}
+          <Graph repo={preview && !replaying ? preview.local : shown.local} previewBase={preview && !replaying ? session.world.local : undefined} highlight={replaying || preview ? [] : highlight} />
+          <label className="absolute right-3 bottom-1 z-10 flex items-center gap-1 text-[10px] text-slate-500">
+            <input type="checkbox" checked={previewOn} onChange={(e) => setSettings({ preview: e.target.checked })} className="accent-violet-500" />
+            実行プレビュー
+          </label>
         </div>
       </div>
       <div className={`${pane('visual')} items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-100/50 px-3 py-1.5 text-sm backdrop-blur-xl lg:flex dark:border-amber-400/20 dark:bg-amber-500/10`} aria-live="polite" data-testid="summary">

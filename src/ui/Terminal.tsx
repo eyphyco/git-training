@@ -50,6 +50,12 @@ export function Terminal({ repo }: { repo: RepoState }) {
   }, [pending, setPending]);
 
   const info = lookupCommand(input);
+  // 入力が止まったら実行プレビュー用にストアへ渡す
+  const setDraft = useLesson((s) => s.setDraft);
+  useEffect(() => {
+    const t = setTimeout(() => setDraft(input), 200);
+    return () => clearTimeout(t);
+  }, [input, setDraft]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
