@@ -20,7 +20,6 @@ const LANE_COLORS = ['#0284c7', '#db2777', '#16a34a', '#ea580c', '#7c3aed', '#0d
 const laneColor = (lane: number) => LANE_COLORS[lane % LANE_COLORS.length];
 
 const nx = (col: number) => PAD_X + col * COL;
-const ny = (lane: number) => TOP + lane * LANE;
 
 function edgePath(x1: number, y1: number, x2: number, y2: number, firstParent: boolean) {
   if (y1 === y2) return `M${x1},${y1} L${x2},${y2}`;
@@ -139,7 +138,11 @@ export function Graph({ repo, highlight = [], compact, previewBase, onSelect }: 
   }
 
   const width = PAD_X * 2 + (layout.cols - 1) * COL + (compact ? 40 : 120);
-  const height = TOP + (layout.lanes - 1) * LANE + 34;
+  // 一番上のレーンのラベルが多い（HEAD・ブランチ・origin/* が同じコミット）ときは、上の余白を広げる
+  const stack = Math.max(0, ...layout.nodes.filter((n) => n.lane === 0).map((n) => n.labels.length));
+  const top = Math.max(TOP, R + 12 + stack * (PILL_H + 3));
+  const ny = (lane: number) => top + lane * LANE;
+  const height = top + (layout.lanes - 1) * LANE + 34;
   // ラベルは位置を key で追いかけてアニメーションさせるため、ノードとは別に並べる
   // HEAD を一番上にして「HEAD → main」の順に積む（i = 0 がノードに一番近い）
   const labels = layout.nodes.flatMap((n) => n.labels.map((l, i) => ({ l, i: n.labels.length - 1 - i, n })));
