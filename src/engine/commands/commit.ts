@@ -1,6 +1,7 @@
 import { fail, unsupported, type CommandDef, type Ctx } from '../command';
-import { commitFiles, short, subject, writeBlob, writeCommit, writeTree } from '../model/objects';
-import { currentBranch, headOid, logRef, setBranch } from '../model/refs';
+import { commitFiles, getCommit, short, subject, writeBlob, writeCommit, writeTree } from '../model/objects';
+import { formatDate } from './log';
+import { currentBranch, headOid, isAncestor, logRef, setBranch } from '../model/refs';
 import { computeStatus } from '../model/status';
 import type { Oid, Signature } from '../model/types';
 import { printSummary, treeDiffStat } from '../stat';
@@ -54,18 +55,20 @@ export const commit: CommandDef = {
   run(ctx) {
     const repo = ctx.repo;
     const { opts } = ctx.args;
-    if (opts.amend) unsupported('commit --amend', '直前のコミットを作り直します（第6章で扱います）');
     if (ctx.args.positional.length) unsupported('パス指定付きの commit', 'git commit <path> は指定ファイルだけをコミットします。このサイトでは git add してから git commit してください');
     const merging = repo.inProgress?.op === 'merge' ? repo.inProgress : undefined;
-    if (merging?.conflicts.length)
+    // cherry-pick / revert / rebase が衝突で止まっているときの commit は、その続きとして扱う
+    const seq = repo.inProgress && repo.inProgress.op !== 'merge' && repo.inProgress.stopped === 'conflict' ? repo.inProgress : undefined;
+    if (repo.inProgress?.conflicts.length)
       fail(
         "error: Committing is not possible because you have unmerged files.\nhint: Fix them up in the work tree, and then use 'git add/rm <file>'\nhint: as appropriate to mark resolution and make a commit.\nfatal: Exiting because of an unresolved conflict.",
         'コンフリクトが残っています。ファイルを直して git add してからコミットしましょう。',
       );
     const messages = (opts.message as string[] | undefined) ?? [];
-    if (!messages.length && !merging)
+    if (opts.amend) return amend(ctx, messages, Boolean(opts['no-edit']), Boolean(opts.all));
+    if (!messages.length && !merging && !seq)
       fail('このサイトではエディタが開けないため、-m でメッセージを指定してください。', '例: git commit -m "README を追加"（実 Git では -m なしだとエディタが開きます）');
-    const message = messages.length ? cleanupMessage(messages) : merging!.message;
+    const message = messages.length ? cleanupMessage(messages) : (merging?.message ?? seq!.message);
     if (!message) fail('Aborting commit due to empty commit message.');
 
     if (opts.all) {
@@ -91,8 +94,18 @@ export const commit: CommandDef = {
     const parents = parent ? [parent] : [];
     if (merging) parents.push(merging.theirs);
     const before = commitFiles(repo, parent);
-    const oid = commitIndex(ctx, message, parents, merging ? 'commit (merge)' : parent ? 'commit' : 'commit (initial)');
+    // cherry-pick / rebase の続きなら作者は元のコミットのまま
+    const author = seq?.current && seq.op !== 'revert' ? getCommit(repo, seq.current.oid).author : undefined;
+    const oid = author
+      ? writeHeadCommit(ctx, { tree: writeTree(repo, { ...repo.index }), parents, author, message, time: ctx.tick(), reflog: 'commit' })
+      : commitIndex(ctx, message, parents, merging ? 'commit (merge)' : parent ? 'commit' : 'commit (initial)');
     if (merging) delete repo.inProgress;
+    if (seq) {
+      seq.current = null;
+      seq.stopped = null;
+      if (seq.op !== 'rebase' && !seq.todo.length) delete repo.inProgress;
+      else ctx.hint(`続きは git ${seq.op} --continue で進めます。`);
+    }
     if (opts.quiet) return;
     const branch = currentBranch(repo);
     const label = branch ? `${branch}${parent ? '' : ' (root-commit)'}` : 'detached HEAD';
@@ -100,3 +113,26 @@ export const commit: CommandDef = {
     printSummary(ctx, treeDiffStat(repo, before, commitFiles(repo, oid)), false);
   },
 };
+
+/** git commit --amend：直前のコミットを作り直す（親はそのまま、作者と作者の時刻は元のまま） */
+function amend(ctx: Ctx, messages: string[], noEdit: boolean, all: boolean) {
+  const repo = ctx.repo;
+  if (repo.inProgress?.op === 'merge') fail('fatal: You are in the middle of a merge -- cannot amend.', 'マージ中は amend できません。先にマージを完了するか中止しましょう。');
+  const head = headOid(repo);
+  if (!head) fail('fatal: You have nothing to amend.', 'まだコミットがありません。');
+  if (!messages.length && !noEdit) fail('このサイトではエディタが開けないため、-m で新しいメッセージを指定するか --no-edit を付けてください。', '例: git commit --amend -m "直したメッセージ"、ファイルだけ足すなら git commit --amend --no-edit');
+  if (all) for (const p of Object.keys(repo.index)) {
+    if (p in repo.workingTree) repo.index[p] = writeBlob(repo, repo.workingTree[p]);
+    else delete repo.index[p];
+  }
+  const old = getCommit(repo, head);
+  const message = messages.length ? cleanupMessage(messages) : old.message;
+  const oid = writeHeadCommit(ctx, { tree: writeTree(repo, { ...repo.index }), parents: old.parents, author: old.author, message, time: ctx.tick(), reflog: 'commit (amend)' });
+  ctx.emit({ type: 'COMMIT_AMENDED', from: head, to: oid });
+  const branch = currentBranch(repo);
+  ctx.out(`[${branch ?? 'detached HEAD'} ${short(oid)}] ${subject(message)}`);
+  ctx.out(` Date: ${formatDate(old.author.time, old.author.tz)}`);
+  printSummary(ctx, treeDiffStat(repo, commitFiles(repo, old.parents[0] ?? null), commitFiles(repo, oid)), false);
+  const pushed = Object.entries(repo.refs.remotes).some(([, refs]) => Object.values(refs).some((o) => o === head || isAncestor(repo, head, o)));
+  if (pushed) ctx.hint('このコミットはすでに push 済みです。amend すると別のコミットに置き換わるため、push には --force が必要になり、チームの履歴を壊すおそれがあります。');
+}

@@ -1,5 +1,5 @@
 // コミットグラフのレイアウト計算（列 = 時間順、行 = レーン）。描画とは分けてテストする。
-import { getCommit } from '../../engine/model/objects';
+import { getCommit, peel } from '../../engine/model/objects';
 import { currentBranch, headOid } from '../../engine/model/refs';
 import type { Oid, RepoState } from '../../engine/model/types';
 
@@ -18,7 +18,7 @@ export function tips(repo: RepoState): { name: string; oid: Oid; kind: Label['ki
   });
   for (const [name, oid] of heads) out.push({ name, oid, kind: 'branch' });
   for (const [r, refs] of Object.entries(repo.refs.remotes)) for (const [b, oid] of Object.entries(refs)) out.push({ name: `${r}/${b}`, oid, kind: 'remote' });
-  for (const [t, oid] of Object.entries(repo.refs.tags)) out.push({ name: t, oid, kind: 'tag' });
+  for (const [t, oid] of Object.entries(repo.refs.tags)) out.push({ name: t, oid: peel(repo, oid), kind: 'tag' });
   return out;
 }
 
