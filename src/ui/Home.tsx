@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { chapters, lessons } from '../lesson/content';
 import { chapterProgress, isChapterUnlocked, useProgress } from '../store/progress';
+import { Dashboard } from './Dashboard';
 import { href } from './router';
 
 function Settings() {
@@ -69,8 +70,6 @@ function Settings() {
 export function Home() {
   const progress = useProgress();
   const doneCount = Object.values(progress.lessons).filter((l) => l.status === 'done').length;
-  const totalLessons = Object.keys(lessons).length;
-  const minutes = Object.values(progress.studyLog).reduce((a, b) => a + b, 0);
   const resume = progress.resume && lessons[progress.resume.lessonId];
   const firstTodo = chapters.flatMap((c) => [...c.lessons, ...(c.challenge ? [c.challenge] : [])]).find((id) => progress.lessons[id]?.status !== 'done');
   const target = resume?.id ?? firstTodo;
@@ -82,31 +81,21 @@ export function Home() {
         <p className="text-sm text-slate-500">Git と GitHub の操作を、動く図で見ながら身につける</p>
       </header>
 
-      <section className="flex flex-wrap items-center gap-4 rounded-xl border border-white/60 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+      <section className="glass flex flex-wrap items-center gap-3 rounded-2xl p-4">
         {target && (
           <a href={href.lesson(target)} className="rounded-xl bg-gradient-to-r from-sky-500 to-violet-500 px-5 py-3 font-bold text-white shadow-lg shadow-sky-500/30 transition hover:brightness-110" data-testid="resume">
             {resume ? '続きから再開' : doneCount ? '次のレッスンへ' : 'はじめる'} → {lessons[target].title}
           </a>
         )}
-        <dl className="flex gap-6 text-sm">
-          <div>
-            <dt className="text-slate-500">クリア</dt>
-            <dd className="text-xl font-bold">
-              {doneCount}
-              <span className="text-sm font-normal text-slate-500"> / {totalLessons}</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">学習時間</dt>
-            <dd className="text-xl font-bold">
-              {Math.floor(minutes / 60)}
-              <span className="text-sm font-normal">時間</span>
-              {minutes % 60}
-              <span className="text-sm font-normal">分</span>
-            </dd>
-          </div>
-        </dl>
+        <a href={href.play()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-play">
+          🧪 フリープレイ
+        </a>
+        <a href={href.commands()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-commands">
+          📖 コマンド辞典
+        </a>
       </section>
+
+      <Dashboard />
 
       <section>
         <h2 className="mb-3 font-bold">章マップ</h2>

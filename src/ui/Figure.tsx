@@ -34,7 +34,7 @@ export function Figure({ id }: { id: string }) {
         </span>
       </figcaption>
       {show.includes('graph') && (
-        <div className="h-40">
+        <div className="h-52">
           <Graph repo={frame.world.local} compact />
         </div>
       )}
