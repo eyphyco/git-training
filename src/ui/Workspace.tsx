@@ -1,5 +1,6 @@
 // レッスン画面とフリープレイで共通の作業領域：グラフ（再生付き）・「今何が起きた？」・4エリア / エディタ・ターミナル。
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { pendingEditor } from '../engine/editor';
 import type { Session } from '../lesson/session';
 import { useLesson } from '../store/lesson';
 import { AreaView } from './AreaView';
@@ -9,6 +10,7 @@ import { ReplayBar } from './ReplayBar';
 import { promptFor, Terminal } from './Terminal';
 
 const Editor = lazy(() => import('./editor/Editor'));
+const GitHubView = lazy(() => import('./github/GitHubView').then((m) => ({ default: m.GitHubView })));
 
 export type MobileTab = 'task' | 'visual' | 'terminal';
 
@@ -44,12 +46,24 @@ export function WorkspaceLayout({ tab, left, session, resetKey }: { tab: MobileT
 function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): string }) {
   const run = useLesson((s) => s.run);
   const save = useLesson((s) => s.save);
-  const [view, setView] = useState<'areas' | 'editor'>('areas');
+  const [view, setView] = useState<'areas' | 'editor' | 'github'>('areas');
   const [editing, setEditing] = useState<string | null>(null);
   const [replay, setReplay] = useState<number | null>(null);
 
-  // 新しい操作をしたら再生をやめて「今」を表示する
-  useEffect(() => setReplay(null), [session.seq]);
+  // 新しい操作をしたら再生をやめて「今」を表示する。git がエディタを開いたらエディタに切り替える
+  useEffect(() => {
+    setReplay(null);
+    const opened = session.lastEvents.find((e) => e.type === 'EDITOR_OPENED');
+    if (opened?.type === 'EDITOR_OPENED') {
+      setView('editor');
+      setEditing(opened.path);
+    }
+    // PR が作られた・レビューされたら GitHub タブを開く
+    if (session.lastEvents.some((e) => e.type === 'PR_OPENED' || e.type === 'PR_REVIEWED')) setView('github');
+  }, [session.seq, session.lastEvents]);
+  const pending = pendingEditor(session.world);
+  const hasGitHub = !!session.world.remotes.origin;
+  const openPrs = session.world.hosting.pullRequests.filter((p) => p.state === 'open').length;
 
   const repo = session.world.local;
   const replaying = replay !== null && replay < session.timeline.length;
@@ -76,7 +90,8 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
           {(
             [
               ['areas', '4エリア'],
-              ['editor', `エディタ${editing ? `：${editing}` : ''}`],
+              ['editor', `エディタ${editing ? `：${editing.split('/').pop()}` : ''}${pending ? ' ✎' : ''}`],
+              ...(hasGitHub ? ([['github', `GitHub${openPrs ? `（PR ${openPrs}）` : ''}`]] as const) : []),
             ] as const
           ).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setView(v)} className={`rounded-t-lg px-3 py-1 ${view === v ? 'bg-white/70 font-bold dark:bg-white/10' : 'text-slate-500'}`}>
@@ -85,7 +100,11 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
           ))}
         </div>
         <div className="min-h-0 flex-1">
-          {view === 'areas' ? (
+          {view === 'github' && hasGitHub ? (
+            <Suspense fallback={<div className="p-4 text-sm text-slate-500">読み込み中…</div>}>
+              <GitHubView world={shown} readOnly={replaying} />
+            </Suspense>
+          ) : view === 'areas' ? (
             <AreaView
               repo={shown.local}
               remote={shown.local.config.remotes?.origin ? shown.remotes.origin : undefined}
@@ -100,7 +119,7 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
             />
           ) : (
             <Suspense fallback={<div className="p-4 text-sm text-slate-500">エディタを読み込み中…</div>}>
-              <Editor repo={repo} path={editing} onSelect={setEditing} onSave={save} />
+              <Editor repo={repo} pending={pending} path={editing} onSelect={setEditing} onSave={save} />
             </Suspense>
           )}
         </div>
