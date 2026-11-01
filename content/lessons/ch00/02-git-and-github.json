@@ -1,0 +1,31 @@
+{
+  "id": "ch00-02",
+  "title": "Git と GitHub / GitLab",
+  "level": "intro",
+  "doc": "02-git-and-github.md",
+  "setup": { "initialized": false },
+  "steps": [
+    {
+      "type": "quiz",
+      "question": "Git と GitHub の関係として正しいのは？",
+      "choices": ["同じものの別名", "Git はバージョン管理ツール、GitHub は Git リポジトリを置いて共同作業するためのサービス", "GitHub がないと Git は使えない"],
+      "answer": 1,
+      "explain": "Git は手元の PC で動くツールで、ネットがなくても使えます。GitHub / GitLab は Git リポジトリを預けて、レビューなどの共同作業をするためのサービスです。"
+    },
+    {
+      "type": "quiz",
+      "question": "Git が「分散型」と呼ばれる理由は？",
+      "choices": ["ファイルがバラバラに保存されるから", "全員の PC に履歴を含むリポジトリの完全なコピーがあるから", "複数のサーバーが必要だから"],
+      "answer": 1,
+      "explain": "[[distributed|分散型]] では各自が履歴まるごとのコピーを持つので、オフラインでもコミットでき、サーバーが壊れても履歴が失われにくくなります。"
+    },
+    {
+      "type": "quiz",
+      "question": "GitHub の「Pull Request」に相当する GitLab の機能は？",
+      "choices": ["Merge Request", "Push Request", "Issue"],
+      "answer": 0,
+      "explain": "GitLab では [[pull-request|Pull Request]] を Merge Request（MR）と呼びます。中身はほぼ同じで、第5章で詳しく扱います。"
+    }
+  ],
+  "allowedCommands": []
+}

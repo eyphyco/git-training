@@ -1,0 +1,38 @@
+{
+  "id": "ch02-03",
+  "title": "fast-forward マージ",
+  "level": "beginner",
+  "doc": "03-fast-forward.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# app\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add login", "files": { "login.ts": "export const login = () => {};\n" } }
+    ],
+    "branches": { "main": "c1", "feature/login": "c2" },
+    "head": "main"
+  },
+  "steps": [
+    {
+      "instruction": "feature/login を main にマージしてみよう",
+      "hints": ["今いるブランチに取り込むコマンドは？", "git merge <ブランチ名>", "git merge feature/login"],
+      "answer": ["git merge feature/login"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c2" }, { "type": "noMergeCommit" }],
+      "explain": "main が c2 まで前に進んだだけで、新しいコミットは作られていません。"
+    },
+    {
+      "instruction": "マージ済みのブランチは不要なので削除しよう。",
+      "hints": ["-d で削除します（マージ済みのときだけ消せる安全な削除）", "git branch -d feature/login"],
+      "answer": ["git branch -d feature/login"],
+      "check": [{ "type": "branchExists", "name": "feature/login", "exists": false }],
+      "explain": "名札を外しただけで、コミット c2 は main から辿れるので消えません。"
+    },
+    {
+      "type": "quiz",
+      "question": "fast-forward マージができる条件は？",
+      "choices": ["2つのブランチが同じファイルを変えていないこと", "今のブランチに、相手のブランチにない新しいコミットがないこと（一直線に進めるだけで済む）", "ブランチ名が feature/ で始まること"],
+      "answer": 1,
+      "explain": "分かれた後に main 側にもコミットがあると一直線に進められないので、次のレッスンの 3-way マージになります。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "merge", "switch", "branch"]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "ch02-05",
+  "title": "HEAD と detached HEAD",
+  "level": "beginner",
+  "doc": "05-head.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "v1", "files": { "app.txt": "version 1\n" } },
+      { "id": "c2", "parent": "c1", "msg": "v2", "files": { "app.txt": "version 2\n" } },
+      { "id": "c3", "parent": "c2", "msg": "v3", "files": { "app.txt": "version 3\n" } }
+    ],
+    "branches": { "main": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "1つ前のコミット（v2）の状態を見に行こう。HEAD~1 は「HEAD の1つ前」という意味です。",
+      "hints": ["コミットに直接移動するには --detach が必要です", "git switch --detach HEAD~1"],
+      "answer": ["git switch --detach HEAD~1"],
+      "check": [{ "type": "headOn", "detached": true }, { "type": "fileContent", "path": "app.txt", "equals": "version 2\n" }],
+      "explain": "HEAD がブランチではなくコミット v2 を直接指しています。これが detached HEAD です。app.txt も v2 の内容になりました。"
+    },
+    {
+      "type": "quiz",
+      "question": "detached HEAD のままコミットして、別のブランチに switch するとどうなる？",
+      "choices": ["コミットは自動で main に入る", "どのブランチからも辿れなくなり、見失いやすい（reflog で探せば戻せる）", "Git がエラーで switch させない"],
+      "answer": 1,
+      "explain": "残したいなら detached HEAD のうちに git switch -c <新ブランチ> で名札を付けます。"
+    },
+    {
+      "instruction": "main に戻ろう。",
+      "hints": ["git switch main"],
+      "answer": ["git switch main"],
+      "check": [{ "type": "headOn", "branch": "main" }, { "type": "fileContent", "path": "app.txt", "equals": "version 3\n" }],
+      "explain": "HEAD がまた main を指し、main が進めば HEAD も一緒に進む通常の状態に戻りました。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "switch", "branch", "checkout", "diff"]
+}

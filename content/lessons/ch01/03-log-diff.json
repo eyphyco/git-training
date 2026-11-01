@@ -1,0 +1,45 @@
+{
+  "id": "ch01-03",
+  "title": "log と diff で履歴と差分を見る",
+  "level": "beginner",
+  "doc": "03-log-diff.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "add README", "files": { "README.md": "# My App\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add todo list", "files": { "todo.txt": "- 牛乳を買う\n- 部屋を片付ける\n" } }
+    ],
+    "branches": { "main": "c2" },
+    "workingTree": { "todo.txt": "- 牛乳を買う\n- 部屋を片付ける\n- Git の勉強\n" }
+  },
+  "steps": [
+    {
+      "instruction": "git log --oneline で、これまでのコミットを一覧しよう。",
+      "hints": ["--oneline を付けると1コミット1行で表示されます", "git log --oneline"],
+      "answer": ["git log --oneline"],
+      "check": [{ "type": "commandUsed", "command": "git log" }],
+      "explain": "新しい順に並び、先頭の7文字がコミット ID（ハッシュ）です。グラフのコミットにマウスを乗せると同じ ID が見られます。"
+    },
+    {
+      "instruction": "todo.txt が編集されています。git diff で、何が変わったかを確かめよう。",
+      "hints": ["git diff はステージとワークツリーの差を表示します", "git diff"],
+      "answer": ["git diff"],
+      "check": [{ "type": "commandUsed", "command": "git diff" }],
+      "explain": "+ が付いた緑の行が追加された行、- が付いた赤の行が削除された行です。"
+    },
+    {
+      "instruction": "todo.txt をステージに載せてから、git diff --staged でステージとコミットの差を見よう。",
+      "hints": ["add した後の git diff（オプションなし）は何も出ません", "git add todo.txt → git diff --staged"],
+      "answer": ["git add todo.txt", "git diff --staged"],
+      "check": [{ "type": "fileStatus", "path": "todo.txt", "status": "staged" }, { "type": "commandUsed", "command": "git diff --staged" }],
+      "explain": "git diff は「まだステージに載せていない変更」、git diff --staged は「次のコミットに入る変更」を見せます。"
+    },
+    {
+      "instruction": "「update todo」というメッセージでコミットし、git log でもう一度履歴を確認しよう。",
+      "hints": ["git commit -m \"update todo\" → git log"],
+      "answer": ["git commit -m \"update todo\"", "git log"],
+      "check": [{ "type": "commitCount", "ref": "main", "count": 3 }, { "type": "commandUsed", "command": "git log" }],
+      "explain": "git log（オプションなし）では作者・日時・メッセージの全文が見られます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff"]
+}

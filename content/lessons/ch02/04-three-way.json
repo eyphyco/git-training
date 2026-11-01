@@ -1,0 +1,38 @@
+{
+  "id": "ch02-04",
+  "title": "3-way マージ",
+  "level": "beginner",
+  "doc": "04-three-way.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "index.html": "<h1>Shop</h1>\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add cart", "files": { "cart.js": "export const cart = [];\n" } },
+      { "id": "c3", "parent": "c1", "msg": "update readme", "files": { "README.md": "# Shop\n\nオンラインショップです。\n" } }
+    ],
+    "branches": { "main": "c3", "feature/cart": "c2" }
+  },
+  "steps": [
+    {
+      "instruction": "グラフを見ると main と feature/cart が c1 から枝分かれしています。feature/cart を main にマージしよう。",
+      "hints": ["今いるのは main です。取り込みたいのは？", "git merge feature/cart"],
+      "answer": ["git merge feature/cart"],
+      "check": [{ "type": "hasMergeCommit", "ref": "main" }, { "type": "headOn", "branch": "main" }, { "type": "fileContent", "path": "cart.js", "area": "head" }, { "type": "fileContent", "path": "README.md", "area": "head", "contains": "オンラインショップ" }],
+      "explain": "両方の変更を合わせた新しい「マージコミット」ができました。グラフで2本の線が1つに合流しています。"
+    },
+    {
+      "instruction": "git log --oneline で履歴を見てみよう。",
+      "hints": ["git log --oneline"],
+      "answer": ["git log --oneline"],
+      "check": [{ "type": "commandUsed", "command": "git log" }],
+      "explain": "両方のブランチのコミットが時刻順に並び、一番上に「Merge branch 'feature/cart'」があります。"
+    },
+    {
+      "type": "quiz",
+      "question": "マージコミットの親はいくつ？",
+      "choices": ["0", "1", "2"],
+      "answer": 2,
+      "explain": "マージコミットは「マージ前の main」と「取り込んだ feature/cart」の2つを親に持ちます。グラフのマージコミットにマウスを乗せて確かめましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "merge", "switch", "branch", "diff"]
+}

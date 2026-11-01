@@ -1,0 +1,31 @@
+{
+  "id": "ch00-01",
+  "title": "バージョン管理とは",
+  "level": "intro",
+  "doc": "01-version-control.md",
+  "setup": { "initialized": false, "workingTree": { "report.txt": "売上レポート\n" } },
+  "steps": [
+    {
+      "instruction": "下のターミナルに git --version と入力して Enter を押してみよう。Git が使えることを確かめます。",
+      "hints": ["ターミナル（画面下の黒い部分）をクリックしてから入力します", "git --version"],
+      "answer": ["git --version"],
+      "check": [{ "type": "commandUsed", "command": "git --version" }],
+      "explain": "バージョンが表示されれば Git が使える状態です。このサイトではブラウザの中で Git をシミュレートしています。"
+    },
+    {
+      "type": "quiz",
+      "question": "「report_最新.txt」「report_最新2.txt」… とファイルをコピーして管理する方法の一番の問題は？",
+      "choices": ["ファイル名が長くなる", "いつ・誰が・何を・なぜ変えたかが残らず、安全に元に戻せない", "パソコンが遅くなる"],
+      "answer": 1,
+      "explain": "バージョン管理システムは「変更の記録（いつ・誰が・何を・なぜ）」を残し、いつでも過去の状態に戻せるようにする仕組みです。"
+    },
+    {
+      "type": "quiz",
+      "question": "Git の [[commit]] とは何？",
+      "choices": ["ファイルを削除すること", "その時点のプロジェクト全体のスナップショット（記録）", "インターネットにアップロードすること"],
+      "answer": 1,
+      "explain": "コミットは「この時点の状態」を丸ごと記録したスナップショットです。メッセージ・作者・日時・親コミットも一緒に保存されます。"
+    }
+  ],
+  "allowedCommands": ["status"]
+}
