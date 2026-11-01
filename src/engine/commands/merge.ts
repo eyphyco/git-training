@@ -1,6 +1,6 @@
 import { fail, type CommandDef, type Ctx } from '../command';
-import { mergeText } from '../merge/merge3';
-import { commitFiles, getBlob, short, writeBlob } from '../model/objects';
+import { mergeTrees } from '../merge/tree3';
+import { commitFiles, getBlob, short } from '../model/objects';
 import { currentBranch, headOid, isAncestor, mergeBase, resolveRev, setBranch, logRef } from '../model/refs';
 import { computeStatus } from '../model/status';
 import type { Oid, Path } from '../model/types';
@@ -94,32 +94,7 @@ export function mergeInto(ctx: Ctx, theirs: Oid, name: string, mo: MergeOptions)
 
   // 3-way マージ（ファイル単位で判定し、両方が変えたファイルだけ行単位で diff3）
   const base = mergeBase(repo, ours, theirs);
-  const baseFiles = commitFiles(repo, base);
-  const result: Record<Path, Oid> = {};
-  const conflictText: Record<Path, string> = {};
-  const conflicts: Path[] = [];
-  const lines: string[] = [];
-  for (const p of [...new Set([...Object.keys(baseFiles), ...Object.keys(oursFiles), ...Object.keys(theirsFiles)])].sort()) {
-    const [b, o, t] = [baseFiles[p], oursFiles[p], theirsFiles[p]];
-    if (o === t || b === t) {
-      if (o) result[p] = o;
-    } else if (b === o) {
-      if (t) result[p] = t;
-    } else if (!o || !t) {
-      conflicts.push(p);
-      lines.push(`CONFLICT (modify/delete): ${p} deleted in ${o ? name : 'HEAD'} and modified in ${o ? 'HEAD' : name}.  Version ${o ? 'HEAD' : name} of ${p} left in tree.`);
-      result[p] = (o ?? t)!;
-    } else {
-      lines.push(`Auto-merging ${p}`);
-      const m = mergeText(getBlob(repo, o), b ? getBlob(repo, b) : '', getBlob(repo, t), { ours: 'HEAD', theirs: mo.label ?? name });
-      if (m.conflict) {
-        conflicts.push(p);
-        conflictText[p] = m.text;
-        lines.push(`CONFLICT (${b ? 'content' : 'add/add'}): Merge conflict in ${p}`);
-        result[p] = o;
-      } else result[p] = writeBlob(repo, m.text);
-    }
-  }
+  const { result, conflictText, conflicts, lines } = mergeTrees(repo, commitFiles(repo, base), oursFiles, theirsFiles, { ours: 'HEAD', theirs: mo.label ?? name });
   const message = mo.messages?.length
     ? cleanupMessage(mo.messages)
     : (mo.defaultMessage ?? `Merge branch '${name}'`) + (branch && !['main', 'master'].includes(branch) ? ` into ${branch}` : '');

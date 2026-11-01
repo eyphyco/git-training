@@ -17,6 +17,8 @@ export function explainEvents(events: GitEvent[]): string | null {
         parts.push('.git フォルダが作られ、ここが Git リポジトリになりました');
         break;
       case 'COMMIT_CREATED':
+        // rebase / revert / amend などは専用の説明を出す
+        if (events.some((x) => ['REBASED', 'REVERTED', 'CHERRY_PICKED', 'COMMIT_AMENDED', 'SEQUENCE_STOPPED'].includes(x.type))) break;
         parts.push(
           e.parents.length > 1
             ? `親を2つ持つマージコミット ${short(e.oid)} を作りました`
@@ -45,6 +47,63 @@ export function explainEvents(events: GitEvent[]): string | null {
         if (!events.some((x) => x.type === 'BRANCH_CREATED'))
           parts.push(e.detached ? `HEAD がコミット ${e.to} を直接指す detached HEAD になりました` : `HEAD が ${e.to} に移動し、ワークツリーが ${e.to} の内容に入れ替わりました`);
         else parts.push(`HEAD が新しいブランチ ${e.to} に移動しました`);
+        break;
+      case 'RESET':
+        parts.push(
+          `${e.ref} を ${short(e.from)} → ${short(e.to)} に戻しました（${{ soft: '--soft：変更はステージに残っています', mixed: '--mixed：変更はワークツリーに残っています', hard: '--hard：ワークツリーも戻しました' }[e.mode]}）${e.lost.length ? `。${e.lost.length} 個のコミットがどのブランチからも辿れなくなりました（git reflog で戻せます）` : ''}`,
+        );
+        break;
+      case 'COMMIT_AMENDED':
+        parts.push(`コミット ${short(e.from)} を作り直して ${short(e.to)} にしました（元のコミットとは別物です）`);
+        break;
+      case 'REVERTED':
+        parts.push(`${short(e.target)} の変更を打ち消すコミット ${short(e.oid)} を新しく作りました（履歴は消えていません）`);
+        break;
+      case 'CHERRY_PICKED':
+        if (!events.some((x) => x.type === 'REBASED')) parts.push(`${short(e.from)} の変更だけをコピーして、新しいコミット ${short(e.oid)} を作りました`);
+        break;
+      case 'REBASED':
+        parts.push(`${e.branch ?? 'HEAD'} のコミットを ${short(e.onto)} の先に付け直しました（コミット ID が変わり、履歴が一直線になります）`);
+        break;
+      case 'SEQUENCE_STOPPED':
+        if (e.reason === 'edit') parts.push('edit の指示で止まりました。直してから git commit --amend → git rebase --continue');
+        if (e.reason === 'editor') parts.push('git がエディタの保存を待っています（エディタタブを開きました）');
+        break;
+      case 'SEQUENCE_ABORTED':
+        parts.push(`${e.op} を中止し、始める前の状態に戻しました`);
+        break;
+      case 'STASHED':
+        parts.push('作業中の変更を stash に退避し、ワークツリーを最後のコミットの状態に戻しました');
+        break;
+      case 'STASH_APPLIED':
+        parts.push(e.conflict ? 'stash を戻そうとしましたが、今の変更とぶつかりました' : `stash の変更をワークツリーに戻しました${e.dropped ? '（stash からは削除）' : '（stash には残っています）'}`);
+        break;
+      case 'STASH_DROPPED':
+        parts.push('stash を1つ削除しました');
+        break;
+      case 'TAG_CREATED':
+        parts.push(`${short(e.oid)} に${e.annotated ? '注釈付き' : ''}タグ ${e.name} を付けました（ブランチと違い、コミットしても動きません）`);
+        break;
+      case 'PR_OPENED':
+        parts.push(`PR #${e.number}（${e.head} → ${e.base}）が作られました`);
+        break;
+      case 'PR_REVIEWED':
+        parts.push(`PR #${e.number} に ${e.author} さんのレビュー（${{ approved: '承認', changes_requested: '修正依頼', commented: 'コメント' }[e.state]}）が付きました`);
+        break;
+      case 'PR_MERGED':
+        parts.push(`GitHub 上で PR #${e.number} を ${e.method} でマージしました。GitHub の ${e.base} が進みました（手元は git pull で追いつきます）`);
+        break;
+      case 'PR_CLOSED':
+        parts.push(`PR #${e.number} をマージせずにクローズしました`);
+        break;
+      case 'ISSUE_CLOSED':
+        parts.push(`PR #${e.by} のマージで Issue #${e.number} が自動で閉じました`);
+        break;
+      case 'PROTECTION_CHANGED':
+        parts.push(`${e.branch} のブランチ保護を変更しました`);
+        break;
+      case 'PUSH_PROTECTED':
+        parts.push(`${e.branch} は保護されているため、GitHub が push を拒否しました`);
         break;
       case 'CONFIG_SET':
         parts.push(`${e.key} を「${e.value}」に設定しました`);

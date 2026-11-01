@@ -1,0 +1,50 @@
+{
+  "id": "ch05-05",
+  "title": "レビューする側・CODEOWNERS・GitLab との違い",
+  "level": "intermediate",
+  "doc": "05-codeowners.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "style.css": "body { color: black; }\n", ".github/CODEOWNERS": "*.css @you\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "hosting": { "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1, "requireCodeOwnerReviews": true }] }
+  },
+  "steps": [
+    {
+      "before": [{ "type": "openPr", "author": "Suzuki", "head": "style/dark", "title": "ダークモード", "body": "背景を暗くしました。", "message": "add dark theme", "files": { "style.css": "body { color: white; background: #111; }\n" } }],
+      "instruction": "Suzuki さんの PR #1 があなたにレビュー依頼されています。まず `gh pr checkout 1` で手元に取り込もう（動かして確かめるため）。",
+      "hints": ["gh pr checkout <番号> は、PR のブランチを fetch して切り替えます", "gh pr checkout 1"],
+      "answer": ["gh pr checkout 1"],
+      "check": [{ "type": "headOn", "branch": "style/dark" }]
+    },
+    {
+      "instruction": "`gh pr view 1` で、マージを止めている理由を確認しよう。",
+      "hints": ["gh pr view 1"],
+      "answer": ["gh pr view 1"],
+      "check": [{ "type": "commandUsed", "command": "gh pr view" }],
+      "explain": "「Code owner review required（@you の承認が必要）」と出ています。CODEOWNERS に `*.css @you` とあるため、CSS の変更にはあなたの承認が必要です。"
+    },
+    {
+      "instruction": "内容に問題がないので承認しよう：`gh pr review 1 --approve`（GitHub タブの Approve ボタンでもOK）。",
+      "hints": ["gh pr review 1 --approve"],
+      "answer": ["gh pr review 1 --approve"],
+      "check": [{ "type": "prState", "pr": 1, "approvedBy": "you" }],
+      "explain": "これで PR #1 はマージできる状態になりました（gh pr view 1 で確かめられます）。"
+    },
+    {
+      "type": "quiz",
+      "question": ".github/CODEOWNERS に `*.css @you` と書くと？",
+      "choices": ["CSS ファイルを @you しか編集できなくなる", "CSS を変更する PR に、@you のレビューが自動で求められる", "CSS ファイルが Git の管理から外れる"],
+      "answer": 1,
+      "explain": "CODEOWNERS は「このファイルの担当者」を決める仕組みです。ブランチ保護と組み合わせると、担当者の承認を必須にできます。"
+    },
+    {
+      "type": "quiz",
+      "question": "GitHub の Pull Request は、GitLab では何と呼ぶ？",
+      "choices": ["Merge Request（MR）", "Push Request", "Branch Request"],
+      "answer": 0,
+      "explain": "GitLab では Merge Request（MR）。中身はほぼ同じで、Approve は「承認」、CI は「GitLab CI/CD のパイプライン」です。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "branch", "switch", "fetch", "pull"]
+}

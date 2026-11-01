@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" preserveAspectRatio="xMidYMid slice">
+  <!--
+    下地の「写真」（ダーク）。構図はライトと同じで、夜の街並みにする。
+
+    明るい絵を薄布で沈めると、地がガラスの板より明るくなって上下が逆さに見える。
+    絵そのものを暗く持つのが唯一の解なので、テーマごとに 1 枚ずつ置く。
+    明暗の振れ幅は狭く保つ（#0b1120〜#1f2a48）。窓明かりは紫〜青の滲みで置き、
+    点のように明るいものは作らない（板を透けて文字の後ろに来ると読みにくい）。
+  -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#121a30" />
+      <stop offset="0.6" stop-color="#0e1527" />
+      <stop offset="1" stop-color="#0b1120" />
+    </linearGradient>
+    <filter id="defocus" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="50" />
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)" />
+  <g filter="url(#defocus)">
+    <ellipse cx="1180" cy="200" rx="420" ry="220" fill="#1f2a48" />
+    <ellipse cx="380" cy="140" rx="360" ry="160" fill="#1b2442" />
+    <rect x="880" y="260" width="140" height="520" fill="#1a2340" />
+    <rect x="1060" y="200" width="110" height="600" fill="#211f45" />
+    <rect x="1230" y="300" width="170" height="480" fill="#18213c" />
+    <rect x="560" y="320" width="120" height="460" fill="#1c2546" />
+    <ellipse cx="140" cy="760" rx="210" ry="260" fill="#10201f" />
+    <ellipse cx="1520" cy="820" rx="180" ry="220" fill="#122220" />
+    <ellipse cx="800" cy="980" rx="900" ry="120" fill="#141c34" />
+  </g>
+</svg>

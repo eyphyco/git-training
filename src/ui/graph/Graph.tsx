@@ -2,11 +2,11 @@
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef } from 'react';
 import { commitFiles, getCommit, short } from '../../engine/model/objects';
-import { ancestors, currentBranch } from '../../engine/model/refs';
+import { ancestors, currentBranch, headOid } from '../../engine/model/refs';
 import type { Oid, RepoState } from '../../engine/model/types';
 import { useAnim } from '../anim';
 import { Explain } from '../Explain';
-import { layoutGraph, type Label, type Layout } from './layout';
+import { layoutGraph, tips, type Label, type Layout } from './layout';
 
 const COL = 64;
 const LANE = 84;
@@ -82,11 +82,35 @@ function LabelCard({ repo, label, oid }: { repo: RepoState; label: Label; oid: O
   );
 }
 
-type Props = { repo: RepoState; highlight?: Oid[]; compact?: boolean };
+type Props = {
+  repo: RepoState;
+  highlight?: Oid[];
+  compact?: boolean;
+  /** 実行プレビュー（F-20）：repo は実行後の状態、base は今の状態 */
+  previewBase?: RepoState;
+};
 
-export function Graph({ repo, highlight = [], compact }: Props) {
+function reachable(repo: RepoState): Set<Oid> {
+  const out = new Set<Oid>();
+  const h = headOid(repo);
+  for (const t of [...tips(repo).map((x) => x.oid), ...(h ? [h] : [])]) for (const o of ancestors(repo, t)) out.add(o);
+  return out;
+}
+
+export function Graph({ repo, highlight = [], compact, previewBase }: Props) {
   const { move, d } = useAnim();
-  const layout: Layout | null = useMemo(() => (repo.initialized ? layoutGraph(repo) : null), [repo]);
+  const layout: Layout | null = useMemo(() => {
+    if (!repo.initialized) return null;
+    if (!previewBase) return layoutGraph(repo);
+    const h = headOid(previewBase);
+    return layoutGraph(repo, [...tips(previewBase).map((t) => t.oid), ...(h ? [h] : [])]);
+  }, [repo, previewBase]);
+  // プレビューで新しくできるコミットと、どこからも辿れなくなるコミット
+  const ghost = useMemo(() => {
+    if (!previewBase || !layout) return null;
+    const now = reachable(repo);
+    return { added: new Set(layout.nodes.filter((n) => !previewBase.objects[n.oid]).map((n) => n.oid)), lost: new Set(layout.nodes.filter((n) => !now.has(n.oid)).map((n) => n.oid)) };
+  }, [repo, previewBase, layout]);
   const scroller = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   useEffect(() => {
@@ -123,6 +147,8 @@ export function Graph({ repo, highlight = [], compact }: Props) {
       <svg width={width} height={height} role="img" aria-label="コミットグラフ" className="select-none">
         {layout.edges.map((e) => (
           <motion.path
+            opacity={ghost && (ghost.added.has(e.from) || ghost.lost.has(e.from)) ? 0.35 : 1}
+            strokeDasharray={ghost?.added.has(e.from) ? '5 4' : undefined}
             key={`${e.from}-${e.to}`}
             d={edgePath(nx(e.fromCol), ny(e.fromLane), nx(e.toCol), ny(e.toLane), e.firstParent)}
             fill="none"
@@ -135,19 +161,27 @@ export function Graph({ repo, highlight = [], compact }: Props) {
         ))}
         {layout.nodes.map((n) => {
           const isNew = highlight.includes(n.oid);
+          const added = ghost?.added.has(n.oid);
+          const lost = ghost?.lost.has(n.oid);
           return (
             <Explain key={n.oid} asChild side="bottom" content={<CommitCard repo={repo} oid={n.oid} />}>
               <motion.g
                 style={{ originX: `${nx(n.col)}px`, originY: `${ny(n.lane)}px`, cursor: 'help' }}
                 initial={mounted.current ? { scale: 0, opacity: 0 } : false}
-                animate={{ scale: 1, opacity: 1 }}
+                animate={{ scale: 1, opacity: added ? 0.55 : lost ? 0.22 : 1 }}
+                data-preview={added ? 'added' : lost ? 'lost' : undefined}
                 transition={move}
                 data-testid={`commit-${short(n.oid)}`}
               >
                 {isNew && (
                   <motion.circle cx={nx(n.col)} cy={ny(n.lane)} r={R} fill="none" stroke={laneColor(n.lane)} initial={{ r: R, opacity: 0.8 }} animate={{ r: R + 14, opacity: 0 }} transition={{ duration: d(1.2), repeat: 1 }} />
                 )}
-                <circle cx={nx(n.col)} cy={ny(n.lane)} r={R} fill={n.isMerge ? 'white' : laneColor(n.lane)} stroke={laneColor(n.lane)} strokeWidth={n.isMerge ? 4 : 2} />
+                <circle cx={nx(n.col)} cy={ny(n.lane)} r={R} fill={n.isMerge || added ? 'white' : laneColor(n.lane)} stroke={laneColor(n.lane)} strokeWidth={n.isMerge ? 4 : 2} strokeDasharray={added ? '4 3' : undefined} />
+                {lost && (
+                  <text x={nx(n.col)} y={ny(n.lane) + 4} textAnchor="middle" className="fill-rose-600 text-[12px] font-bold">
+                    ×
+                  </text>
+                )}
                 <text x={nx(n.col)} y={ny(n.lane) + R + 14} textAnchor="middle" className="fill-slate-500 font-mono text-[10px]">
                   {short(n.oid)}
                 </text>
@@ -163,7 +197,7 @@ export function Graph({ repo, highlight = [], compact }: Props) {
           const y = ny(n.lane) - R - 6 - PILL_H - i * (PILL_H + 3);
           const style =
             l.kind === 'head'
-              ? { fill: l.detached ? '#ea580c' : '#1e293b', stroke: 'none', text: 'white' }
+              ? { fill: l.detached ? '#ea580c' : 'var(--ink)', stroke: 'none', text: l.detached ? 'white' : 'var(--paper)' }
               : l.kind === 'remote'
                 ? { fill: 'transparent', stroke: '#64748b', text: '#64748b' }
                 : { fill: l.current ? laneColor(n.lane) : 'white', stroke: laneColor(n.lane), text: l.current ? 'white' : laneColor(n.lane) };

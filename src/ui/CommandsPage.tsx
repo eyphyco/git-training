@@ -25,7 +25,7 @@ export function CommandsPage({ q: initial }: { q?: string }) {
         <h1 className="text-2xl font-bold">コマンド辞典</h1>
         <p className="text-sm text-slate-500">意味・危険度・関連レッスン。危険度は「履歴や変更を失う可能性があるか」の目安です。</p>
       </header>
-      <div className="glass sticky top-2 z-10 space-y-2 rounded-2xl p-3">
+      <div className="glass sticky top-2 z-10 space-y-2 rounded-3xl p-3">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="検索（例：push、ステージ、取り消す）" className="glass-input w-full py-2" aria-label="コマンドを検索" autoFocus />
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[null, ...categories].map((c) => (
@@ -39,7 +39,7 @@ export function CommandsPage({ q: initial }: { q?: string }) {
         {hits.map(([k, v]) => {
           const rel = relatedLessons(k, all);
           return (
-            <li key={k} className="glass rounded-2xl p-4" data-testid={`command-${k}`}>
+            <li key={k} className="glass rounded-3xl p-4" data-testid={`command-${k}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <code className="font-mono text-base font-bold">{k}</code>
                 <span className={`rounded px-1.5 text-xs font-bold ${DANGER_LABEL[v.danger].cls}`}>{DANGER_LABEL[v.danger].text}</span>

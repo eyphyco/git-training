@@ -1,0 +1,20 @@
+{
+  "id": "rebase",
+  "title": "rebase：コミットを付け替える",
+  "show": ["graph"],
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "main work", "files": { "main.txt": "m\n" } },
+      { "id": "f1", "parent": "c1", "msg": "feat 1", "files": { "f1.txt": "1\n" } },
+      { "id": "f2", "parent": "f1", "msg": "feat 2", "files": { "f2.txt": "2\n" } }
+    ],
+    "branches": { "main": "c2", "feature": "f2" },
+    "head": "feature"
+  },
+  "intro": "feature は init から分かれた後、main が「main work」に進みました。",
+  "steps": [
+    { "commands": ["git rebase main"], "caption": "git rebase main：feat 1・feat 2 が main work の先に作り直されました（ID が変わり、元のコミットはどこからも辿れなくなります）。" },
+    { "commands": ["git switch main", "git merge feature"], "caption": "main で merge すると fast-forward。マージコミットのない一直線の履歴になりました。" }
+  ]
+}

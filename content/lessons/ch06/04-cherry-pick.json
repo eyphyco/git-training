@@ -1,0 +1,33 @@
+{
+  "id": "ch06-04",
+  "title": "cherry-pick：1つのコミットだけ持ってくる",
+  "level": "advanced",
+  "doc": "04-cherry-pick.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "app.js": "app()\n" } },
+      { "id": "c2", "parent": "c1", "msg": "release 1.0", "files": { "VERSION": "1.0\n" } },
+      { "id": "f1", "parent": "c1", "msg": "wip: new design", "files": { "design.css": "/* wip */\n" } },
+      { "id": "f2", "parent": "f1", "msg": "fix security bug", "files": { "security.js": "escape()\n" } },
+      { "id": "f3", "parent": "f2", "msg": "wip: more design", "files": { "design.css": "/* wip 2 */\n" } }
+    ],
+    "branches": { "main": "c2", "feature/design": "f3" }
+  },
+  "steps": [
+    {
+      "instruction": "feature/design の途中で直した「fix security bug」だけを、今すぐ main に入れたい（デザインの作業はまだ入れない）。main にいる状態で cherry-pick しよう。",
+      "hints": ["「fix security bug」は feature/design の1つ前（feature/design~1）", "git cherry-pick feature/design~1"],
+      "answer": ["git cherry-pick feature/design~1"],
+      "check": [{ "type": "fileContent", "path": "security.js", "area": "head", "exists": true }, { "type": "fileContent", "path": "design.css", "exists": false }],
+      "explain": "security.js だけが main に入りました。グラフを見ると、main に「fix security bug」のコピーが新しいコミットとしてできています。"
+    },
+    {
+      "type": "quiz",
+      "question": "cherry-pick で main にできたコミットの ID は、元のコミットと同じ？",
+      "choices": ["同じ", "違う（親と作成日時が違う別のコミット）"],
+      "answer": 1,
+      "explain": "変更内容は同じでも、親コミットが違うので別のコミットになります。後で feature/design をマージしても、Git は同じ変更として扱ってくれます。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "cherry-pick", "switch", "branch", "add", "commit"]
+}

@@ -29,7 +29,7 @@ export function Dashboard() {
   const available = chapters.filter((c) => c.lessons.length);
 
   return (
-    <section className="glass space-y-4 rounded-2xl p-4" data-testid="dashboard">
+    <section className="glass space-y-4 rounded-3xl p-4" data-testid="dashboard">
       <h2 className="font-bold">学習ダッシュボード</h2>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="クリア" sub={`全 ${total} レッスン（章末チャレンジ含む）`}>

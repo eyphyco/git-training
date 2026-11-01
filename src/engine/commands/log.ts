@@ -1,5 +1,5 @@
 import { fail, unsupported, type CommandDef } from '../command';
-import { getCommit, short, subject } from '../model/objects';
+import { getCommit, peel, short, subject } from '../model/objects';
 import { currentBranch, headOid, resolveRev, walkLog } from '../model/refs';
 import type { Oid, RepoState } from '../model/types';
 
@@ -9,7 +9,7 @@ export function decorations(repo: RepoState, oid: Oid): string[] {
   const branch = currentBranch(repo);
   if (repo.head.type === 'detached' && repo.head.oid === oid) out.push('HEAD');
   if (branch && repo.refs.heads[branch] === oid) out.push(`HEAD -> ${branch}`);
-  for (const [t, o] of Object.entries(repo.refs.tags)) if (o === oid) out.push(`tag: ${t}`);
+  for (const [t, o] of Object.entries(repo.refs.tags)) if (peel(repo, o) === oid) out.push(`tag: ${t}`);
   for (const [r, refs] of Object.entries(repo.refs.remotes))
     for (const [b, o] of Object.entries(refs)) if (o === oid) out.push(`${r}/${b}`);
   for (const [b, o] of Object.entries(repo.refs.heads).sort()) if (o === oid && b !== branch) out.push(b);
@@ -43,7 +43,7 @@ export const log: CommandDef = {
     }
     let starts: Oid[];
     if (opts.all) {
-      starts = [...Object.values(repo.refs.heads), ...Object.values(repo.refs.tags), ...Object.values(repo.refs.remotes).flatMap((r) => Object.values(r))];
+      starts = [...Object.values(repo.refs.heads), ...Object.values(repo.refs.tags).map((o) => peel(repo, o)), ...Object.values(repo.refs.remotes).flatMap((r) => Object.values(r))];
       const h = headOid(repo);
       if (h) starts.push(h);
     } else if (revs.length) {

@@ -1,0 +1,56 @@
+{
+  "id": "ch05-03",
+  "title": "マージ方式3種：merge / squash / rebase",
+  "level": "intermediate",
+  "doc": "03-merge-methods.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "before": [{ "type": "openPr", "author": "Sato", "head": "feature/cart", "title": "カート", "message": "add cart", "files": { "cart.js": "export const cart = [];\n" } }],
+      "instruction": "Sato さんの PR #1 を **Create a merge commit**（マージコミット）でマージしよう。",
+      "hints": ["gh pr merge <番号> --merge", "gh pr merge 1 --merge"],
+      "answer": ["gh pr merge 1 --merge"],
+      "check": [{ "type": "prState", "pr": 1, "state": "merged", "method": "merge" }]
+    },
+    {
+      "before": [{ "type": "openPr", "author": "Suzuki", "head": "feature/coupon", "title": "クーポン", "message": "add coupon", "files": { "coupon.js": "export const coupon = 0;\n" } }],
+      "instruction": "Suzuki さんの PR #2 は **Squash and merge** でマージしよう。",
+      "hints": ["gh pr merge 2 --squash"],
+      "answer": ["gh pr merge 2 --squash"],
+      "check": [{ "type": "prState", "pr": 2, "state": "merged", "method": "squash" }]
+    },
+    {
+      "before": [{ "type": "openPr", "author": "Tanaka", "head": "feature/points", "title": "ポイント", "message": "add points", "files": { "points.js": "export const points = 0;\n" } }],
+      "instruction": "Tanaka さんの PR #3 は **Rebase and merge** でマージしよう。",
+      "hints": ["gh pr merge 3 --rebase"],
+      "answer": ["gh pr merge 3 --rebase"],
+      "check": [{ "type": "prState", "pr": 3, "state": "merged", "method": "rebase" }]
+    },
+    {
+      "instruction": "git pull して、手元のグラフで3つの方式の違いを見比べよう。",
+      "hints": ["git pull"],
+      "answer": ["git pull"],
+      "check": [{ "type": "remoteEquals", "ref": "main" }],
+      "explain": "PR #1 はマージコミット（2本の線が合流）、#2 は「クーポン (#2)」という1つのコミット、#3 は元のコミットが一直線に付け直されています。"
+    },
+    {
+      "type": "quiz",
+      "question": "PR のコミットを1つにまとめて main に載せるのはどれ？",
+      "choices": ["Create a merge commit", "Squash and merge", "Rebase and merge"],
+      "answer": 1,
+      "explain": "squash は PR の変更全体を1コミットにまとめます。作業途中の細かいコミットを main に残したくないときに使います。"
+    },
+    {
+      "type": "quiz",
+      "question": "「main の履歴を一直線に保ちたい、でも PR の各コミットは残したい」ときは？",
+      "choices": ["Create a merge commit", "Squash and merge", "Rebase and merge"],
+      "answer": 2,
+      "explain": "rebase merge は PR のコミットを main の先に1つずつ付け直します。マージコミットはできません（コミット ID は変わります）。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "branch", "switch", "fetch", "pull"]
+}

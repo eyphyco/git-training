@@ -72,14 +72,21 @@ function TaskCard({ lesson, step }: { lesson: Lesson; step: TaskStep }) {
       </div>
       {showAnswer && step.answer && (
         <ul className="mt-2 space-y-1">
-          {step.answer.map((a, i) => (
-            <li key={i} className="flex items-center gap-2 rounded-lg bg-slate-950/80 px-2 py-1 font-mono text-xs text-slate-100">
-              <span className="flex-1 break-all">{a}</span>
-              <button type="button" onClick={() => setPending(a)} className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 font-sans text-[10px] hover:bg-slate-600">
-                入力欄へ
-              </button>
-            </li>
-          ))}
+          {step.answer.map((a, i) =>
+            typeof a === 'string' ? (
+              <li key={i} className="flex items-center gap-2 rounded-lg bg-slate-950/80 px-2 py-1 font-mono text-xs text-slate-100">
+                <span className="flex-1 break-all">{a}</span>
+                <button type="button" onClick={() => setPending(a)} className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 font-sans text-[10px] hover:bg-slate-600">
+                  入力欄へ
+                </button>
+              </li>
+            ) : (
+              <li key={i} className="rounded-lg bg-slate-950/80 px-2 py-1 text-xs text-slate-100">
+                <div className="mb-1 font-sans text-slate-300">エディタタブで {a.edit.split('/').pop()} を次の内容にして保存：</div>
+                <pre className="overflow-x-auto font-mono whitespace-pre-wrap">{a.content.split('\n').filter((l) => !l.startsWith('#')).join('\n').trim()}</pre>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </div>

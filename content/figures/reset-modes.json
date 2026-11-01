@@ -1,0 +1,18 @@
+{
+  "id": "reset-modes",
+  "title": "reset の3つのモード",
+  "show": ["graph", "areas"],
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "a.txt": "one\n" } },
+      { "id": "c2", "parent": "c1", "msg": "two", "files": { "a.txt": "two\n" } }
+    ],
+    "branches": { "main": "c2" }
+  },
+  "intro": "main が「two」を指しています。ここから1つ前に戻します。",
+  "steps": [
+    { "commands": ["git reset --soft HEAD~1"], "caption": "--soft：main だけが init に戻りました。「two」の変更はステージに残っています（すぐ commit し直せる）。" },
+    { "commands": ["git reset HEAD"], "caption": "--mixed（既定）：ステージも HEAD（init）に戻り、変更はワークツリーだけに残りました。" },
+    { "commands": ["git reset --hard HEAD"], "caption": "--hard：ワークツリーも戻り、変更は消えました。「two」のコミットは reflog からなら取り戻せます。" }
+  ]
+}

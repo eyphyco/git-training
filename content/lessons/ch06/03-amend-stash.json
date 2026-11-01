@@ -1,0 +1,49 @@
+{
+  "id": "ch06-03",
+  "title": "amend と stash",
+  "level": "advanced",
+  "doc": "03-amend-stash.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# App\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add lgoin", "files": { "login.html": "<form>login</form>\n" } }
+    ],
+    "branches": { "main": "c2" }
+  },
+  "steps": [
+    {
+      "instruction": "直前のコミットのメッセージが「add lgoin」と打ち間違っています（まだ push していません）。`--amend` で「add login」に直そう。",
+      "hints": ["git commit --amend -m \"新しいメッセージ\"", "git commit --amend -m \"add login\""],
+      "answer": ["git commit --amend -m \"add login\""],
+      "check": [{ "type": "graphShape", "expected": { "commits": [{ "msg": "init" }, { "msg": "add login", "parents": ["init"] }], "branches": { "main": "add login" } } }],
+      "explain": "コミットが作り直されました。グラフのコミット ID も変わっています（元のコミットとは別物）。"
+    },
+    {
+      "instruction": "login.html の作業を始めます。`echo \"<p>WIP</p>\" >> login.html` で途中まで書いたところで、急ぎの修正を頼まれました。作業中の変更を `git stash` で退避しよう。",
+      "hints": ["echo \"<p>WIP</p>\" >> login.html → git stash"],
+      "answer": ["echo \"<p>WIP</p>\" >> login.html", "git stash"],
+      "check": [{ "type": "stashCount", "count": 1 }, { "type": "statusClean" }],
+      "explain": "変更が stash に退避され、ワークツリーはきれいになりました。4エリアの下に stash が表示されています。"
+    },
+    {
+      "instruction": "急ぎの修正：README.md を「# My App」に直してコミットしよう（メッセージ「fix title」）。",
+      "hints": ["echo \"# My App\" > README.md → git commit -am \"fix title\""],
+      "answer": ["echo \"# My App\" > README.md", "git commit -am \"fix title\""],
+      "check": [{ "type": "commitCount", "ref": "main", "count": 3 }, { "type": "stashCount", "count": 1 }]
+    },
+    {
+      "instruction": "退避していた作業を `git stash pop` で戻そう。",
+      "hints": ["git stash pop"],
+      "answer": ["git stash pop"],
+      "check": [{ "type": "stashCount", "count": 0 }, { "type": "fileContent", "path": "login.html", "contains": "WIP" }]
+    },
+    {
+      "type": "quiz",
+      "question": "すでに push したコミットを --amend すると？",
+      "choices": ["GitHub 上のコミットも自動で直る", "手元に別のコミットができ、push に --force が必要になる（チームの履歴と食い違う）", "エラーで amend できない"],
+      "answer": 1,
+      "explain": "amend は「作り直し」なので、push 済みのものに使うと履歴の書き換えになります。push 前のコミットだけに使いましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "add", "commit", "stash", "restore", "switch", "branch"]
+}

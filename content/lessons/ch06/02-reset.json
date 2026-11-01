@@ -1,0 +1,44 @@
+{
+  "id": "ch06-02",
+  "title": "reset：--soft / --mixed / --hard",
+  "level": "advanced",
+  "doc": "02-reset.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# App\n" } },
+      { "id": "c2", "parent": "c1", "msg": "wip", "files": { "header.html": "<header></header>\n" } },
+      { "id": "c3", "parent": "c2", "msg": "wip again", "files": { "header.css": "header { color: red; }\n" } }
+    ],
+    "branches": { "main": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "「wip」「wip again」の2つのコミット（まだ push していない）を1つにまとめ直したい。まず `--soft` で2つ前まで戻そう。",
+      "hints": ["HEAD~2 は「2つ前のコミット」", "git reset --soft HEAD~2"],
+      "answer": ["git reset --soft HEAD~2"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c1" }, { "type": "fileStatus", "path": "header.css", "status": "staged" }],
+      "explain": "main は init まで戻りましたが、2つのコミットの変更はステージに残っています（4エリアを見てみましょう）。"
+    },
+    {
+      "instruction": "ステージに残った変更を、きちんとしたメッセージで1つのコミットにしよう（「add header」）。",
+      "hints": ["git commit -m \"add header\""],
+      "answer": ["git commit -m \"add header\""],
+      "check": [{ "type": "commitCount", "ref": "main", "count": 2 }, { "type": "statusClean" }]
+    },
+    {
+      "instruction": "次は失敗した作業を捨てる練習です。header.css をめちゃくちゃに書き換えてから、`git reset --hard` で最後のコミットの状態に戻そう。",
+      "hints": ["echo \"oops\" > header.css で書き換え", "git reset --hard（コミットを指定しなければ HEAD に戻す）"],
+      "answer": ["echo \"oops\" > header.css", "git reset --hard"],
+      "check": [{ "type": "commandUsed", "command": "git reset --hard" }, { "type": "statusClean" }, { "type": "fileContent", "path": "header.css", "equals": "header { color: red; }\n" }],
+      "explain": "未コミットの変更が消えて、最後のコミットの内容に戻りました。--hard で消した未コミットの変更は、Git でも取り戻せません。"
+    },
+    {
+      "type": "quiz",
+      "question": "git reset HEAD~1（オプションなし＝--mixed）をすると、直前のコミットの変更はどこに残る？",
+      "choices": ["どこにも残らない", "ステージに残る", "ワークツリーに残る（ステージからは外れる）"],
+      "answer": 2,
+      "explain": "--soft はステージに、--mixed（既定）はワークツリーに、--hard はどこにも残しません。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "reset", "add", "commit", "restore", "reflog"]
+}

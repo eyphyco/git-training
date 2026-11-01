@@ -88,6 +88,8 @@ export type TeammatePush = {
   author: string;
   remote?: string;
   branch?: string;
+  /** branch がまだないとき、どのブランチから分岐するか（省略時は既定ブランチ） */
+  from?: string;
   message: string;
   /** 親からの変更（null で削除） */
   files: Record<Path, string | null>;
@@ -101,7 +103,8 @@ export function teammatePush(world: World, p: TeammatePush): { world: World; eve
   const next = produce(world, (w) => {
     const remote = w.remotes[remoteName];
     if (!remote) throw new Error(`teammatePush: remote ${remoteName} がありません`);
-    const parent = remote.refs.heads[branch] ?? null;
+    const def = remote.head.type === 'symbolic' ? remote.head.ref : 'main';
+    const parent = remote.refs.heads[branch] ?? remote.refs.heads[p.from ?? def] ?? null;
     const files: Record<Path, Oid> = parent ? readTree(remote, getCommit(remote, parent).tree) : {};
     for (const [path, content] of Object.entries(p.files)) {
       if (content === null) delete files[path];

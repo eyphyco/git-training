@@ -1,0 +1,44 @@
+{
+  "id": "ch06-challenge",
+  "title": "章末チャレンジ：reset --hard の事故から復旧する",
+  "level": "advanced",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# API\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add api", "files": { "api.js": "export function api() {}\n" } },
+      { "id": "c3", "parent": "c2", "msg": "add cache", "files": { "cache.js": "export const cache = new Map();\n" } },
+      { "id": "c4", "parent": "c3", "msg": "add tests", "files": { "api.test.js": "test('api')\n" } }
+    ],
+    "branches": { "main": "c4" }
+  },
+  "steps": [
+    {
+      "instruction": "事故発生：寝ぼけて `git reset --hard HEAD~3` を実行してしまいました（このコマンドを実行してください）。",
+      "hints": ["git reset --hard HEAD~3"],
+      "answer": ["git reset --hard HEAD~3"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c1" }]
+    },
+    {
+      "instruction": "3つのコミットを取り戻そう。",
+      "hints": ["HEAD の記録を見るコマンドは？", "git reflog で reset 前の位置を確認", "git reset --hard HEAD@{1}"],
+      "answer": ["git reflog", "git reset --hard HEAD@{1}"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c4" }]
+    },
+    {
+      "instruction": "調べたところ「add cache」にバグがありました。**履歴を書き換えずに**、そのコミットの変更だけを取り消そう。",
+      "hints": ["履歴を書き換えない取り消しは revert", "「add cache」は HEAD~1", "git revert --no-edit HEAD~1"],
+      "answer": ["git revert --no-edit HEAD~1"],
+      "check": [{ "type": "fileContent", "path": "cache.js", "exists": false }, { "type": "commitCount", "ref": "main", "count": 5 }, { "type": "fileContent", "path": "api.test.js", "exists": true }]
+    },
+    {
+      "instruction": "最後に、今の状態に注釈付きタグ v1.0.0 を付けよう（メッセージ「first release」）。",
+      "hints": ["注釈付きタグは -a と -m", "git tag -a v1.0.0 -m \"first release\""],
+      "answer": ["git tag -a v1.0.0 -m \"first release\""],
+      "check": [{ "type": "tagExists", "name": "v1.0.0", "annotated": true, "at": "HEAD" }],
+      "explain": "クリア！ reflog で復旧 → revert で安全に取り消し → タグでリリース。タグとバージョン番号は第7章でくわしく扱います。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "reset", "reflog", "revert", "tag", "branch", "add", "commit"]
+}

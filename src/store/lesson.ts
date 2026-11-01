@@ -15,6 +15,9 @@ type Store = {
   history: string[];
   /** GUI ボタンなどから入力欄に入れたいテキスト */
   pendingInput: string | null;
+  /** ターミナルに入力中のテキスト（実行プレビュー用） */
+  draft: string;
+  setDraft(text: string): void;
   open(lesson: Lesson): void;
   /** フリープレイ：任意の World から始める */
   openWorld(lesson: Lesson, world: World, note: string): void;
@@ -22,6 +25,8 @@ type Store = {
   save(path: string, content: string | null): void;
   answer(choice: number): boolean;
   toggleCheck(item: number): void;
+  /** GitHub 画面のボタンなど、コマンド以外の操作。失敗したら false（理由はターミナルに出る） */
+  action(label: string, fn: (ctx: import('../engine/command').Ctx) => void): boolean;
   /** フリープレイなどレッスン外の出来事（同僚の push）を反映する */
   apply(world: World, events: import('../engine/model/types').GitEvent[], label: string, summary: string): void;
   undo(): void;
@@ -61,6 +66,10 @@ export const useLesson = create<Store>((set, get) => {
     lines: [],
     history: [],
     pendingInput: null,
+    draft: '',
+    setDraft(text) {
+      if (get().draft !== text) set({ draft: text });
+    },
     open(lesson) {
       const progress = useProgress.getState();
       progress.startLesson(lesson.id);
@@ -86,12 +95,21 @@ export const useLesson = create<Store>((set, get) => {
       const { session: next, result } = S.runCommand(lesson, session, input);
       const cleared = result.events.some((e) => e.type === 'CLEAR');
       const out = result.output.map((o) => line('out', o.text, o.tone));
-      set({ lines: cleared ? [] : [...lines, echo, ...out].slice(-1000), history: [...history, input.trim()].slice(-100) });
+      set({ lines: cleared ? [] : [...lines, echo, ...out].slice(-1000), history: [...history, input.trim()].slice(-100), draft: '' });
       commit(next);
     },
     save(path, content) {
       const { lesson, session, lines } = get();
       if (!lesson || !session) return;
+      // git がエディタの保存を待っている（rebase -i の todo など）なら、結果をターミナルに出す
+      if (content !== null) {
+        const { session: next, result } = S.saveEditorFile(lesson, session, path, content);
+        if (result) {
+          set({ lines: [...lines, line('info', `（エディタ）${path.split('/').pop()} を保存しました`, 'dim'), ...result.output.map((o) => line('out', o.text, o.tone))].slice(-1000) });
+          if (result.ok) commit(next);
+          return;
+        }
+      }
       const next = S.saveFile(lesson, session, path, content);
       if (next.world === session.world) return;
       set({ lines: [...lines, line('info', content === null ? `（エディタ）${path} を削除しました` : `（エディタ）${path} を保存しました`, 'dim')] });
@@ -108,6 +126,14 @@ export const useLesson = create<Store>((set, get) => {
       const { lesson, session } = get();
       if (!lesson || !session) return;
       commit(S.toggleCheck(lesson, session, item));
+    },
+    action(label, fn) {
+      const { lesson, session, lines } = get();
+      if (!lesson || !session) return false;
+      const { session: next, result } = S.runAction(lesson, session, label, fn);
+      set({ lines: [...lines, line('info', label, 'dim'), ...result.output.map((o) => line('out', o.text, o.tone))].slice(-1000) });
+      if (result.ok) commit(next);
+      return result.ok;
     },
     apply(world, events, label, summary) {
       const { lesson, session, lines } = get();

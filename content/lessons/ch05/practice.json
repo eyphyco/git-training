@@ -1,0 +1,32 @@
+{
+  "id": "ch05-practice",
+  "title": "実機演習：本物の GitHub で PR を回す",
+  "level": "intermediate",
+  "practice": true,
+  "doc": "practice.md",
+  "setup": { "initialized": false },
+  "steps": [
+    {
+      "type": "checklist",
+      "instruction": "第4章で作った練習用リポジトリ（git-practice）で、PR を作ってマージしよう。",
+      "items": [
+        "git switch -c feature/hello でブランチを作り、ファイルを追加してコミットした",
+        "git push -u origin feature/hello した（出力の「Create a pull request」の URL を開いた）",
+        "GitHub の画面で PR を作り、Files changed で差分を確認した",
+        "自分の PR に Comment でセルフレビューを書いた（自分の PR は Approve できないことも確認）",
+        "「Squash and merge」でマージし、Delete branch でブランチを消した",
+        "手元で git switch main → git pull して、squash されたコミットが入ったことを git log で確認した"
+      ]
+    },
+    {
+      "type": "checklist",
+      "instruction": "main にブランチ保護を設定しよう（Settings → Branches → Add branch protection rule、または Rulesets）。",
+      "items": [
+        "Branch name pattern に main を入れ、「Require a pull request before merging」を有効にした",
+        "手元の main でコミットして git push し、拒否されることを確認した（確認後は git reset --hard origin/main で戻す）",
+        "（任意）gh auth login で GitHub CLI にログインし、gh pr create / gh pr merge でも同じ流れを試した"
+      ],
+      "explain": "おつかれさまでした！ この Git Training 自体も、フェーズごとに PR を作ってマージする流れで開発しています。"
+    }
+  ]
+}

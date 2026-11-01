@@ -1,30 +1,349 @@
 {
-  "version-control": { "term": "バージョン管理", "short": "ファイルの変更履歴を記録し、過去の状態に戻したり複数人の変更をまとめたりする仕組み。", "related": ["commit", "repository"] },
-  "distributed": { "term": "分散型", "short": "全員が履歴を含むリポジトリの完全なコピーを持つ方式。オフラインでもコミットでき、中央サーバーが壊れても履歴が残る。", "related": ["repository", "remote"] },
-  "repository": { "term": "リポジトリ", "short": "ファイルと変更履歴（コミット）をまとめて保存する場所。実体はプロジェクト直下の .git フォルダ。", "related": ["commit", "remote"] },
-  "working-tree": { "term": "ワークツリー", "short": "実際にファイルを編集している手元のフォルダ。ここでの変更は git add するまでコミットの対象にならない。", "related": ["staging-area", "untracked"] },
-  "staging-area": { "term": "ステージ（インデックス）", "short": "次のコミットに入れる内容を並べておく場所。git add でワークツリーから載せ、git commit でまとめて記録する。", "related": ["working-tree", "commit", "staged"] },
-  "commit": { "term": "コミット", "short": "ある時点のプロジェクト全体のスナップショット。メッセージ・作者・日時・親コミットを持ち、ハッシュで識別される。", "related": ["hash", "parent-commit"] },
-  "hash": { "term": "ハッシュ（コミット ID）", "short": "コミットの中身から計算される40桁の16進数（SHA-1）。中身が1文字でも違えば別の値になる。普段は先頭7桁で呼ぶ。", "related": ["commit"] },
-  "parent-commit": { "term": "親コミット", "short": "そのコミットの1つ前のコミット。通常は1つ、マージコミットは2つ、最初のコミットは0。", "related": ["commit", "merge-commit"] },
-  "HEAD": { "term": "HEAD", "short": "「今いる場所」を表す目印。普段はブランチを指し（HEAD -> main）、コミットするとそのブランチと一緒に進む。", "related": ["branch", "detached-head"] },
-  "detached-head": { "term": "detached HEAD", "short": "HEAD がブランチではなくコミットを直接指している状態。ここで作ったコミットはどのブランチにも属さず、見失いやすい。", "related": ["HEAD"] },
-  "branch": { "term": "ブランチ", "short": "コミットを指す名札。今いるブランチでコミットすると、名札が新しいコミットへ移動する。作るのも消すのも軽い。", "related": ["HEAD", "merge", "main"] },
-  "main": { "term": "main", "short": "本流のブランチの慣習的な名前。古いリポジトリでは master のこともある。", "related": ["branch"] },
-  "merge": { "term": "マージ", "short": "別のブランチの変更を今のブランチに取り込むこと。fast-forward か、マージコミットを作る 3-way マージになる。", "related": ["fast-forward", "three-way-merge", "conflict"] },
-  "fast-forward": { "term": "fast-forward", "short": "今のブランチに新しいコミットがないとき、ブランチの名札を相手の位置まで前に進めるだけのマージ。新しいコミットは作られない。", "related": ["merge", "three-way-merge"] },
-  "three-way-merge": { "term": "3-way マージ", "short": "共通の祖先・自分・相手の3つを比べて変更を混ぜるマージ。結果は親を2つ持つマージコミットになる。", "related": ["merge-commit", "conflict"] },
-  "merge-commit": { "term": "マージコミット", "short": "2つ（以上）の親を持つコミット。2本の歴史が合流した点を表す。", "related": ["three-way-merge", "parent-commit"] },
-  "conflict": { "term": "コンフリクト", "short": "両方のブランチが同じファイルの同じ箇所を変えていて、自動で混ぜられない状態。<<<<<<< と >>>>>>> の間を手で直して add → commit する。", "related": ["merge"] },
-  "untracked": { "term": "未追跡（untracked）", "short": "ワークツリーにはあるが、Git がまだ管理していないファイル。git add すると追跡が始まる。", "related": ["tracked", "gitignore"] },
-  "tracked": { "term": "追跡中（tracked）", "short": "一度ステージに載せ、Git が管理しているファイル。変更すると modified として検出される。", "related": ["untracked", "modified"] },
-  "staged": { "term": "ステージ済み（staged）", "short": "git add してステージに載っている変更。次の git commit に含まれる。", "related": ["staging-area"] },
-  "modified": { "term": "変更あり（modified）", "short": "追跡中のファイルが、ステージの内容から変わっている状態。git add でステージに載せる。", "related": ["tracked", "staged"] },
-  "gitignore": { "term": ".gitignore", "short": "Git に無視させたい未追跡ファイルのパターンを書くファイル。既に追跡中のファイルには効かない。", "related": ["untracked"] },
-  "remote": { "term": "リモート", "short": "GitHub などにある、共有用のリポジトリ。慣習的に origin という名前で登録する。", "related": ["push", "pull", "origin"] },
-  "origin": { "term": "origin", "short": "clone したときに自動で付く、リモートの既定の名前。origin/main はリモートの main の位置の記録。", "related": ["remote"] },
-  "push": { "term": "push", "short": "手元のコミットをリモートに送る操作（第4章）。", "related": ["remote", "pull"] },
-  "pull": { "term": "pull", "short": "リモートの変更を取得して今のブランチに取り込む操作。fetch + merge と同じ（第4章）。", "related": ["remote", "push"] },
-  "pull-request": { "term": "Pull Request（PR）", "short": "「このブランチの変更を取り込んでください」という依頼。レビューと議論を経てマージする。GitLab では Merge Request（MR）。", "related": ["merge", "remote"] },
-  "diff": { "term": "差分（diff）", "short": "2つの状態の違い。+ は追加された行、- は削除された行。", "related": ["staging-area"] }
+  "version-control": {
+    "term": "バージョン管理",
+    "short": "ファイルの変更履歴を記録し、過去の状態に戻したり複数人の変更をまとめたりする仕組み。",
+    "related": [
+      "commit",
+      "repository"
+    ]
+  },
+  "distributed": {
+    "term": "分散型",
+    "short": "全員が履歴を含むリポジトリの完全なコピーを持つ方式。オフラインでもコミットでき、中央サーバーが壊れても履歴が残る。",
+    "related": [
+      "repository",
+      "remote"
+    ]
+  },
+  "repository": {
+    "term": "リポジトリ",
+    "short": "ファイルと変更履歴（コミット）をまとめて保存する場所。実体はプロジェクト直下の .git フォルダ。",
+    "related": [
+      "commit",
+      "remote"
+    ]
+  },
+  "working-tree": {
+    "term": "ワークツリー",
+    "short": "実際にファイルを編集している手元のフォルダ。ここでの変更は git add するまでコミットの対象にならない。",
+    "related": [
+      "staging-area",
+      "untracked"
+    ]
+  },
+  "staging-area": {
+    "term": "ステージ（インデックス）",
+    "short": "次のコミットに入れる内容を並べておく場所。git add でワークツリーから載せ、git commit でまとめて記録する。",
+    "related": [
+      "working-tree",
+      "commit",
+      "staged"
+    ]
+  },
+  "commit": {
+    "term": "コミット",
+    "short": "ある時点のプロジェクト全体のスナップショット。メッセージ・作者・日時・親コミットを持ち、ハッシュで識別される。",
+    "related": [
+      "hash",
+      "parent-commit"
+    ]
+  },
+  "hash": {
+    "term": "ハッシュ（コミット ID）",
+    "short": "コミットの中身から計算される40桁の16進数（SHA-1）。中身が1文字でも違えば別の値になる。普段は先頭7桁で呼ぶ。",
+    "related": [
+      "commit"
+    ]
+  },
+  "parent-commit": {
+    "term": "親コミット",
+    "short": "そのコミットの1つ前のコミット。通常は1つ、マージコミットは2つ、最初のコミットは0。",
+    "related": [
+      "commit",
+      "merge-commit"
+    ]
+  },
+  "HEAD": {
+    "term": "HEAD",
+    "short": "「今いる場所」を表す目印。普段はブランチを指し（HEAD -> main）、コミットするとそのブランチと一緒に進む。",
+    "related": [
+      "branch",
+      "detached-head"
+    ]
+  },
+  "detached-head": {
+    "term": "detached HEAD",
+    "short": "HEAD がブランチではなくコミットを直接指している状態。ここで作ったコミットはどのブランチにも属さず、見失いやすい。",
+    "related": [
+      "HEAD"
+    ]
+  },
+  "branch": {
+    "term": "ブランチ",
+    "short": "コミットを指す名札。今いるブランチでコミットすると、名札が新しいコミットへ移動する。作るのも消すのも軽い。",
+    "related": [
+      "HEAD",
+      "merge",
+      "main"
+    ]
+  },
+  "main": {
+    "term": "main",
+    "short": "本流のブランチの慣習的な名前。古いリポジトリでは master のこともある。",
+    "related": [
+      "branch"
+    ]
+  },
+  "merge": {
+    "term": "マージ",
+    "short": "別のブランチの変更を今のブランチに取り込むこと。fast-forward か、マージコミットを作る 3-way マージになる。",
+    "related": [
+      "fast-forward",
+      "three-way-merge",
+      "conflict"
+    ]
+  },
+  "fast-forward": {
+    "term": "fast-forward",
+    "short": "今のブランチに新しいコミットがないとき、ブランチの名札を相手の位置まで前に進めるだけのマージ。新しいコミットは作られない。",
+    "related": [
+      "merge",
+      "three-way-merge"
+    ]
+  },
+  "three-way-merge": {
+    "term": "3-way マージ",
+    "short": "共通の祖先・自分・相手の3つを比べて変更を混ぜるマージ。結果は親を2つ持つマージコミットになる。",
+    "related": [
+      "merge-commit",
+      "conflict"
+    ]
+  },
+  "merge-commit": {
+    "term": "マージコミット",
+    "short": "2つ（以上）の親を持つコミット。2本の歴史が合流した点を表す。",
+    "related": [
+      "three-way-merge",
+      "parent-commit"
+    ]
+  },
+  "conflict": {
+    "term": "コンフリクト",
+    "short": "両方のブランチが同じファイルの同じ箇所を変えていて、自動で混ぜられない状態。<<<<<<< と >>>>>>> の間を手で直して add → commit する。",
+    "related": [
+      "merge"
+    ]
+  },
+  "untracked": {
+    "term": "未追跡（untracked）",
+    "short": "ワークツリーにはあるが、Git がまだ管理していないファイル。git add すると追跡が始まる。",
+    "related": [
+      "tracked",
+      "gitignore"
+    ]
+  },
+  "tracked": {
+    "term": "追跡中（tracked）",
+    "short": "一度ステージに載せ、Git が管理しているファイル。変更すると modified として検出される。",
+    "related": [
+      "untracked",
+      "modified"
+    ]
+  },
+  "staged": {
+    "term": "ステージ済み（staged）",
+    "short": "git add してステージに載っている変更。次の git commit に含まれる。",
+    "related": [
+      "staging-area"
+    ]
+  },
+  "modified": {
+    "term": "変更あり（modified）",
+    "short": "追跡中のファイルが、ステージの内容から変わっている状態。git add でステージに載せる。",
+    "related": [
+      "tracked",
+      "staged"
+    ]
+  },
+  "gitignore": {
+    "term": ".gitignore",
+    "short": "Git に無視させたい未追跡ファイルのパターンを書くファイル。既に追跡中のファイルには効かない。",
+    "related": [
+      "untracked"
+    ]
+  },
+  "remote": {
+    "term": "リモート",
+    "short": "GitHub などにある、共有用のリポジトリ。慣習的に origin という名前で登録する。",
+    "related": [
+      "push",
+      "pull",
+      "origin"
+    ]
+  },
+  "origin": {
+    "term": "origin",
+    "short": "clone したときに自動で付く、リモートの既定の名前。origin/main はリモートの main の位置の記録。",
+    "related": [
+      "remote"
+    ]
+  },
+  "push": {
+    "term": "push",
+    "short": "手元のコミットをリモートに送る操作（第4章）。",
+    "related": [
+      "remote",
+      "pull"
+    ]
+  },
+  "pull": {
+    "term": "pull",
+    "short": "リモートの変更を取得して今のブランチに取り込む操作。fetch + merge と同じ（第4章）。",
+    "related": [
+      "remote",
+      "push"
+    ]
+  },
+  "pull-request": {
+    "term": "Pull Request（PR）",
+    "short": "「このブランチの変更を取り込んでください」という依頼。レビューと議論を経てマージする。GitLab では Merge Request（MR）。",
+    "related": [
+      "merge",
+      "remote"
+    ]
+  },
+  "diff": {
+    "term": "差分（diff）",
+    "short": "2つの状態の違い。+ は追加された行、- は削除された行。",
+    "related": [
+      "staging-area"
+    ]
+  },
+  "code-review": {
+    "term": "コードレビュー",
+    "short": "他の人の変更（PR の差分）を読んで、問題がないか確かめること。Approve（承認）・Request changes（修正依頼）・Comment で返す。",
+    "related": [
+      "pull-request"
+    ]
+  },
+  "branch-protection": {
+    "term": "ブランチ保護",
+    "short": "main などのブランチに付けるルール。直接 push の禁止、承認数や CI の成功をマージの条件にできる。",
+    "related": [
+      "pull-request",
+      "ci"
+    ]
+  },
+  "ci": {
+    "term": "CI（継続的インテグレーション）",
+    "short": "push や PR のたびに、テストや lint を自動で実行する仕組み。GitHub Actions、GitLab CI/CD など。",
+    "related": [
+      "pull-request"
+    ]
+  },
+  "issue": {
+    "term": "Issue",
+    "short": "やること・バグ報告・要望を書くチケット。PR の本文に Closes #番号 と書くと、マージ時に自動で閉じる。",
+    "related": [
+      "pull-request"
+    ]
+  },
+  "codeowners": {
+    "term": "CODEOWNERS",
+    "short": "「このファイルの担当者」を書くファイル（.github/CODEOWNERS）。該当ファイルを変える PR に、担当者のレビューが求められる。",
+    "related": [
+      "code-review"
+    ]
+  },
+  "merge-request": {
+    "term": "Merge Request（MR）",
+    "short": "GitLab での Pull Request の呼び名。中身はほぼ同じ。",
+    "related": [
+      "pull-request"
+    ]
+  },
+  "revert": {
+    "term": "revert",
+    "short": "指定したコミットの変更を打ち消す、新しいコミットを作る操作。履歴を書き換えないので push 済みでも安全。",
+    "related": [
+      "reset",
+      "commit"
+    ]
+  },
+  "reset": {
+    "term": "reset",
+    "short": "今のブランチを指定したコミットまで戻す操作。--soft / --mixed / --hard で、ステージとワークツリーをどこまで戻すかが変わる。",
+    "related": [
+      "revert",
+      "reflog"
+    ]
+  },
+  "reflog": {
+    "term": "reflog",
+    "short": "HEAD やブランチがどこからどこへ動いたかの記録。reset や rebase で「消えた」コミットを探して取り戻せる。",
+    "related": [
+      "reset",
+      "HEAD"
+    ]
+  },
+  "amend": {
+    "term": "amend",
+    "short": "git commit --amend。直前のコミットを作り直す（メッセージ修正やファイルの追加）。ID が変わるので push 前だけに使う。",
+    "related": [
+      "commit"
+    ]
+  },
+  "stash": {
+    "term": "stash",
+    "short": "作業途中の変更を一時的に退避して、ワークツリーをきれいにする仕組み。git stash pop で戻す。",
+    "related": [
+      "working-tree"
+    ]
+  },
+  "rebase": {
+    "term": "rebase",
+    "short": "今のブランチのコミットを、別のコミットの先に作り直して付け替える操作。履歴が一直線になるが、コミット ID が変わる。",
+    "related": [
+      "merge",
+      "interactive-rebase"
+    ]
+  },
+  "interactive-rebase": {
+    "term": "インタラクティブ rebase（rebase -i）",
+    "short": "コミットを並べ替えたり、まとめたり（squash / fixup）、メッセージを直したり（reword）できる rebase。",
+    "related": [
+      "rebase",
+      "squash"
+    ]
+  },
+  "squash": {
+    "term": "squash",
+    "short": "複数のコミットを1つにまとめること。rebase -i の squash / fixup や、GitHub の Squash and merge で行う。",
+    "related": [
+      "interactive-rebase",
+      "pull-request"
+    ]
+  },
+  "cherry-pick": {
+    "term": "cherry-pick",
+    "short": "指定したコミットの変更だけを、今のブランチに新しいコミットとしてコピーする操作。",
+    "related": [
+      "commit"
+    ]
+  },
+  "tag": {
+    "term": "タグ",
+    "short": "コミットに付ける動かない名札。v1.0.0 のようなリリースの印に使う。注釈付きタグはメッセージと作成者も持つ。",
+    "related": [
+      "branch"
+    ]
+  },
+  "force-push": {
+    "term": "force push",
+    "short": "git push --force。リモートの履歴を手元の内容で上書きする。他の人のコミットが消えるので、共有ブランチでは原則禁止。",
+    "related": [
+      "push",
+      "rebase"
+    ]
+  }
 }

@@ -155,6 +155,20 @@ export function AreaView({ repo, remote, prev, events, seq, onCommand, onOpenFil
     <div className="flex h-full gap-1 p-2">
       <Column title="ワークツリー" term="working-tree" hint="編集中のファイル（クリックで編集）">
         {areas.worktree.length ? areas.worktree.map((f) => chip(f, 'worktree')) : <li className="text-xs text-slate-400">ファイルなし</li>}
+        {repo.stash.length > 0 && (
+          <li className="mt-2 border-t border-dashed border-slate-400/50 pt-1" data-testid="stash-list">
+            <span className="text-[10px] font-bold text-slate-500">
+              📦 <Term id="stash">stash</Term>（退避中 {repo.stash.length}）
+            </span>
+            <ul className="mt-0.5 space-y-0.5">
+              {repo.stash.map((st, i) => (
+                <li key={st.oid} className="truncate rounded bg-slate-500/10 px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:text-slate-300" title={st.message}>
+                  stash@{`{${i}}`}: {st.message}
+                </li>
+              ))}
+            </ul>
+          </li>
+        )}
       </Column>
       {arrow('add')}
       <Column title="ステージ" term="staging-area" hint="次のコミットに入る内容">

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateAll } from '../src/lesson/checks';
 import { chapters, lessons } from '../src/lesson/content';
-import { answerQuiz, checkStep, runCommand, startSession, toggleCheck } from '../src/lesson/session';
+import { answerQuiz, checkStep, runAnswer, startSession, toggleCheck } from '../src/lesson/session';
 import glossary from './glossary.json';
 
 const all = Object.values(lessons);
@@ -40,8 +40,8 @@ describe('教材', () => {
       expect(step.answer?.length, `step ${i} に answer がない`).toBeTruthy();
       expect((step.hints ?? []).length).toBeLessThanOrEqual(3);
       for (const line of step.answer!) {
-        const r = runCommand(lesson, s, line);
-        if (!step.expectError) expect(r.result.ok, `${line}\n${r.result.output.map((o) => o.text).join('\n')}`).toBe(true);
+        const r = runAnswer(lesson, s, line);
+        if (!step.expectError) expect(r.result.ok, `${JSON.stringify(line)}\n${r.result.output.map((o) => o.text).join('\n')}`).toBe(true);
         s = r.session;
       }
       expect(s.stepIndex, `step ${i} が未クリア: ${JSON.stringify(checkStep(lesson, s))}`).toBe(i + 1);

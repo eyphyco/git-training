@@ -1,6 +1,7 @@
 // フリープレイ（S-07, F-16）。課題なしで自由に操作し、状態を JSON / URL で書き出し・読み込みできる。
 import { useEffect, useRef, useState } from 'react';
 import { teammatePush } from '../engine/remote';
+import { applyHostingEvent } from '../hosting/events';
 import { createWorld } from '../engine/world';
 import type { Lesson, Setup } from '../lesson/types';
 import { FREEPLAY_ID, useLesson } from '../store/lesson';
@@ -53,6 +54,13 @@ function PlayPanel() {
     apply(r.world, r.events, `（${author} さんが push）`, `同僚の ${author} さんが origin/${branch} に push しました。git fetch / git pull で取り込めます。`);
   };
 
+  const openPr = () => {
+    const n = world.hosting.pullRequests.length + 1;
+    const head = `${author.toLowerCase()}/feature-${n}`;
+    const r = applyHostingEvent(world, { type: 'openPr', author, head, title: `${author} の機能 #${n}`, body: 'レビューをお願いします。', message: `${author}: add feature ${n}`, files: { [`${author.toLowerCase()}-feature-${n}.txt`]: `${author} の機能 #${n}\n` } });
+    apply(r.world, r.events, `（${author} さんが PR #${n}）`, `${r.summary} gh pr checkout ${n} で取り込み、gh pr review ${n} --approve で承認できます。`);
+  };
+
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 text-sm">
       <div>
@@ -81,6 +89,9 @@ function PlayPanel() {
             </select>
             <button type="button" className="glass-btn px-3 py-1 font-bold" onClick={push} data-testid="teammate-push">
               さんが push
+            </button>
+            <button type="button" className="glass-btn px-3 py-1 font-bold" onClick={openPr} data-testid="teammate-pr">
+              さんが PR を作る
             </button>
           </div>
           <label className="mt-2 flex items-center gap-2 text-xs">

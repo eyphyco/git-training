@@ -1,0 +1,19 @@
+{
+  "id": "pr-flow",
+  "title": "PR の1周：ブランチ → push → PR → 修正 → マージ → pull",
+  "show": ["graph", "areas"],
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } }
+  },
+  "intro": "手元の main と GitHub の main（origin/main）が同じ位置にあります。",
+  "steps": [
+    { "commands": ["git switch -c feature/search", "echo \"search()\" > search.js", "git add .", "git commit -m \"add search\""], "caption": "作業用ブランチでコミット。main は動きません。" },
+    { "commands": ["git push -u origin feature/search", "gh pr create --title \"検索機能\" --body \"検索を追加\""], "caption": "push して PR を作成。GitHub に origin/feature/search ができました。" },
+    { "event": { "type": "review", "author": "Sato", "state": "changes_requested", "body": "空文字のときの処理を追加してください" }, "caption": "Sato さんから修正依頼（Request changes）。まだマージできません。" },
+    { "commands": ["echo \"if (!q) return []\" >> search.js", "git commit -am \"handle empty query\"", "git push"], "caption": "同じブランチで直して push。PR に自動で追加されます。" },
+    { "event": { "type": "review", "author": "Sato", "state": "approved" }, "commands": ["gh pr merge --merge --delete-branch"], "caption": "承認されたのでマージ。GitHub の main にマージコミットができました（手元の main はまだ古い）。" },
+    { "commands": ["git pull"], "caption": "git pull で手元の main も追いつきました。" }
+  ]
+}

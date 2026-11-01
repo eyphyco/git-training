@@ -1,5 +1,6 @@
 // 判定条件（check）の評価。結果は日本語の説明付きで返し、「答え合わせ」ボタンにも使う。
-import { getBlob, getCommit, hashBlob, commitFiles } from '../engine/model/objects';
+import { getBlob, getCommit, hashBlob, commitFiles, peel } from '../engine/model/objects';
+import { latestReviews } from '../hosting/model';
 import { ancestors, currentBranch, headOid, resolveRev } from '../engine/model/refs';
 import { computeStatus } from '../engine/model/status';
 import { aheadBehind, upstreamOf } from '../engine/remote';
@@ -148,8 +149,44 @@ export function evaluate(check: Check, ctx: CheckContext): CheckResult {
       const ab = local && theirs ? aheadBehind(repo, local, theirs) : null;
       return { ok: !!ab && ab.ahead === check.ahead && ab.behind === check.behind, label: `${branch} が追跡先より ${check.ahead} 進み、${check.behind} 遅れている` };
     }
-    case 'prState':
-      return { ok: false, label: `${check.type} はフェーズ2以降で対応予定` };
+    case 'prState': {
+      const prs = ctx.world.hosting.pullRequests.filter((p) => (check.pr === undefined || p.number === check.pr) && (!check.head || p.head === check.head));
+      const pr = prs[prs.length - 1];
+      const what = check.pr !== undefined ? `PR #${check.pr}` : check.head ? `${check.head} の PR` : 'PR';
+      if (check.exists === false) return { ok: !pr, label: `${what} がない` };
+      const reviews = pr ? latestReviews(pr) : [];
+      const ok =
+        !!pr &&
+        (!check.state || pr.state === check.state) &&
+        (!check.method || pr.merged?.method === check.method) &&
+        (!check.approvedBy || reviews.some((r) => r.author === check.approvedBy && r.state === 'approved')) &&
+        (!check.reviewedBy || pr.reviews.some((r) => r.author === check.reviewedBy));
+      const parts = [check.state && { open: 'オープン中', merged: 'マージ済み', closed: 'クローズ済み' }[check.state], check.method && `${check.method} でマージ`, check.approvedBy && `${check.approvedBy} が承認`, check.reviewedBy && `${check.reviewedBy} がレビュー`].filter(Boolean);
+      return { ok, label: `${what} がある${parts.length ? `（${parts.join('・')}）` : ''}` };
+    }
+    case 'issueState': {
+      const issue = ctx.world.hosting.issues?.find((i) => i.number === check.number);
+      return { ok: issue?.state === check.state, label: `Issue #${check.number} が${check.state === 'open' ? 'オープン' : 'クローズ'}` };
+    }
+    case 'protection': {
+      const p = ctx.world.hosting.protections.find((x) => x.branch === check.branch);
+      const ok =
+        !!p &&
+        (check.requirePullRequest === undefined || p.requirePullRequest === check.requirePullRequest) &&
+        (check.requiredApprovals === undefined || (p.requiredApprovals ?? 0) >= check.requiredApprovals) &&
+        (check.requireStatusChecks === undefined || !!p.requireStatusChecks === check.requireStatusChecks);
+      return { ok, label: `${check.branch} にブランチ保護が設定されている${check.requiredApprovals ? `（承認 ${check.requiredApprovals} 件以上）` : ''}` };
+    }
+    case 'stashCount':
+      return { ok: repo.stash.length === check.count, label: `stash が ${check.count} 件` };
+    case 'inProgress':
+      return { ok: (repo.inProgress?.op ?? null) === check.op, label: check.op ? `${check.op} の途中` : '途中の操作（merge / rebase など）がない' };
+    case 'tagExists': {
+      const oid = repo.refs.tags[check.name];
+      const obj = oid ? repo.objects[oid] : undefined;
+      const ok = !!oid && (check.annotated === undefined || (obj?.type === 'tag') === check.annotated) && (!check.at || (oid && peel(repo, oid) === resolve(ctx, check.at)));
+      return { ok: !!ok, label: `タグ ${check.name}${check.annotated ? '（注釈付き）' : ''} がある${check.at ? `（${check.at} を指す）` : ''}` };
+    }
   }
 }
 

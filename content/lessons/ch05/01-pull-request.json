@@ -1,0 +1,46 @@
+{
+  "id": "ch05-01",
+  "title": "PR を作る",
+  "level": "intermediate",
+  "doc": "01-pull-request.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "index.html": "<h1>Shop</h1>\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "instruction": "作業用のブランチ feature/profile を作って移動しよう。main で直接作業しないのがチーム開発の基本です。",
+      "hints": ["ブランチを作って移動するのは git switch -c", "git switch -c feature/profile"],
+      "answer": ["git switch -c feature/profile"],
+      "check": [{ "type": "headOn", "branch": "feature/profile" }]
+    },
+    {
+      "instruction": "profile.html を作ってコミットしよう（メッセージ「add profile page」）。",
+      "hints": ["echo → git add → git commit", "echo \"<h2>Profile</h2>\" > profile.html"],
+      "answer": ["echo \"<h2>Profile</h2>\" > profile.html", "git add profile.html", "git commit -m \"add profile page\""],
+      "check": [{ "type": "commitCount", "ref": "feature/profile", "count": 2 }, { "type": "statusClean" }]
+    },
+    {
+      "instruction": "feature/profile を GitHub に push しよう（初めてなので -u で追跡先も設定）。出力の「Create a pull request ...」にも注目。",
+      "hints": ["git push -u origin <ブランチ名>", "git push -u origin feature/profile"],
+      "answer": ["git push -u origin feature/profile"],
+      "check": [{ "type": "remoteEquals", "ref": "feature/profile" }]
+    },
+    {
+      "instruction": "PR（Pull Request）を作ろう。ターミナルなら `gh pr create --title \"タイトル\" --body \"説明\"`、画面なら GitHub タブの「New pull request」からも作れます。",
+      "hints": ["gh は GitHub をターミナルから操作するコマンドです", "gh pr create --title \"プロフィール画面を追加\" --body \"プロフィール画面を作りました\""],
+      "answer": ["gh pr create --title \"プロフィール画面を追加\" --body \"プロフィール画面を作りました\""],
+      "check": [{ "type": "prState", "head": "feature/profile", "state": "open" }],
+      "explain": "PR #1 ができました。GitHub タブの Pull requests を開くと、Commits / Files changed で中身を確認できます。"
+    },
+    {
+      "type": "quiz",
+      "question": "PR（Pull Request）は何をするためのもの？",
+      "choices": ["GitHub からコードをダウンロードする", "「このブランチの変更を main に取り込んでください」と依頼し、レビューしてからマージする", "ブランチを削除する"],
+      "answer": 1,
+      "explain": "PR は「取り込みの依頼」です。差分を見ながらレビュー・議論し、OK になったらマージします。GitLab では Merge Request（MR）と呼びます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "pull", "remote"]
+}

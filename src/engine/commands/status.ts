@@ -43,7 +43,32 @@ export const status: CommandDef = {
     const s = computeStatus(repo);
     const branch = currentBranch(repo);
     const head = headOid(repo);
-    ctx.out(branch ? `On branch ${branch}` : `HEAD detached at ${short(head!)}`, branch ? 'normal' : 'red');
+    const ip = repo.inProgress;
+    if (ip?.op === 'rebase' && ip.stopped !== 'editor' || (ip?.op === 'rebase' && ip.editor?.purpose === 'message')) {
+      ctx.out(`${ip.interactive ? 'interactive rebase' : 'rebase'} in progress; onto ${short(ip.onto!)}`);
+      ctx.out(`You are currently ${ip.stopped === 'edit' ? 'editing a commit while rebasing' : 'rebasing'} branch '${ip.headName ?? 'HEAD'}' on '${short(ip.onto!)}'.`);
+      if (ip.stopped === 'conflict') {
+        ctx.out(s.conflicts.length ? '  (fix conflicts and then run "git rebase --continue")' : '  (all conflicts fixed: run "git rebase --continue")');
+        ctx.out('  (use "git rebase --skip" to skip this patch)');
+        ctx.out('  (use "git rebase --abort" to check out the original branch)');
+      } else if (ip.stopped === 'edit') {
+        ctx.out('  (use "git commit --amend" to amend the current commit)');
+        ctx.out('  (use "git rebase --continue" once you are satisfied with your changes)');
+      }
+      ctx.out('');
+    } else ctx.out(branch ? `On branch ${branch}` : `HEAD detached at ${short(head!)}`, branch ? 'normal' : 'red');
+    if (ip?.op === 'rebase' && ip.editor?.purpose === 'todo') {
+      ctx.out('interactive rebase in progress (editing the todo list)');
+      ctx.out('  (save git-rebase-todo in the editor to start, or use "git rebase --abort")');
+      ctx.out('');
+    }
+    if ((ip?.op === 'cherry-pick' || ip?.op === 'revert') && ip.current) {
+      ctx.out(`You are currently ${ip.op === 'revert' ? 'reverting' : 'cherry-picking'} commit ${short(ip.current.oid)}.`);
+      ctx.out(s.conflicts.length ? `  (fix conflicts and run "git ${ip.op} --continue")` : `  (all conflicts fixed: run "git ${ip.op} --continue")`);
+      ctx.out(`  (use "git ${ip.op} --skip" to skip this patch)`);
+      ctx.out(`  (use "git ${ip.op} --abort" to cancel the ${ip.op} operation)`);
+      ctx.out('');
+    }
     const tracking = trackingLines(repo);
     if (tracking.length) {
       for (const l of tracking) ctx.out(l);

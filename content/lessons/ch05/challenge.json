@@ -1,0 +1,50 @@
+{
+  "id": "ch05-challenge",
+  "title": "章末チャレンジ：レビュー指摘を反映して PR をマージ",
+  "level": "intermediate",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "app.js": "export const app = 1;\n" } },
+      { "id": "f1", "parent": "c1", "msg": "add cart", "files": { "cart.js": "export function cart() {\n  debugger;\n  return [];\n}\n" } }
+    ],
+    "branches": { "main": "c1", "feature/cart": "f1" },
+    "head": "feature/cart",
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "hosting": {
+      "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1, "requireStatusChecks": true }],
+      "ci": [{ "name": "test", "description": "lint", "failIf": { "path": "cart.js", "contains": "debugger" } }]
+    }
+  },
+  "steps": [
+    {
+      "instruction": "feature/cart を GitHub に送り、PR（タイトル「カート機能」）を作ろう。",
+      "hints": ["まだ push していません。-u を付けて push", "git push -u origin feature/cart → gh pr create --title \"カート機能\" --body \"...\""],
+      "answer": ["git push -u origin feature/cart", "gh pr create --title \"カート機能\" --body \"カートを追加しました\""],
+      "check": [{ "type": "prState", "head": "feature/cart", "state": "open" }]
+    },
+    {
+      "before": [{ "type": "review", "author": "Sato", "state": "changes_requested", "body": "debugger が残っていて CI（lint）も落ちています。消してください。" }],
+      "instruction": "レビューと CI の結果を確認し、指摘を直して push しよう。",
+      "hints": ["gh pr view や GitHub タブの Checks で、何が問題か見られます", "cart.js から debugger の行を消す（エディタタブでも echo でも）", "echo \"export function cart() {\" > cart.js → echo \"  return [];\" >> cart.js → echo \"}\" >> cart.js → commit -am → push"],
+      "answer": ["echo \"export function cart() {\" > cart.js", "echo \"  return [];\" >> cart.js", "echo \"}\" >> cart.js", "git commit -am \"remove debugger\"", "git push"],
+      "check": [{ "type": "fileContent", "path": "cart.js", "area": "head", "notContains": "debugger" }, { "type": "remoteEquals", "ref": "feature/cart" }]
+    },
+    {
+      "before": [{ "type": "review", "author": "Sato", "state": "approved", "body": "直りました！" }],
+      "instruction": "承認と CI がそろいました。**squash** でマージし、ブランチも削除しよう。",
+      "hints": ["gh pr merge のオプションで方式とブランチ削除を指定", "gh pr merge --squash --delete-branch"],
+      "answer": ["gh pr merge --squash --delete-branch"],
+      "check": [{ "type": "prState", "head": "feature/cart", "state": "merged", "method": "squash" }]
+    },
+    {
+      "instruction": "手元の main を GitHub に追いつかせよう。",
+      "hints": ["git pull"],
+      "answer": ["git pull"],
+      "check": [{ "type": "headOn", "branch": "main" }, { "type": "remoteEquals", "ref": "main" }, { "type": "fileContent", "path": "cart.js", "notContains": "debugger" }],
+      "explain": "クリア！ 保護・レビュー・CI・squash マージという、実務の PR の流れを一通り回せました。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "pull"]
+}

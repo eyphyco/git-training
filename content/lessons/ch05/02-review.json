@@ -1,0 +1,53 @@
+{
+  "id": "ch05-02",
+  "title": "レビューの指摘を反映する",
+  "level": "intermediate",
+  "doc": "02-review.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "f1", "parent": "c1", "msg": "add search", "files": { "search.js": "export function search(q) { return find(q); }\n" } }
+    ],
+    "branches": { "main": "c1", "feature/search": "f1" },
+    "head": "feature/search",
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1", "feature/search": "f1" } } }
+  },
+  "steps": [
+    {
+      "instruction": "feature/search はもう push 済みです。PR を作ろう（タイトル「検索機能」）。",
+      "hints": ["gh pr create --title \"...\" --body \"...\"", "gh pr create --title \"検索機能\" --body \"検索ボックスを追加しました\""],
+      "answer": ["gh pr create --title \"検索機能\" --body \"検索ボックスを追加しました\""],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "open" }]
+    },
+    {
+      "before": [{ "type": "review", "author": "Sato", "state": "changes_requested", "body": "空の検索語のときは空の配列を返してください。", "comments": [{ "path": "search.js", "line": 1, "body": "ここで q が空かチェックしてほしいです" }] }],
+      "instruction": "Sato さんから **修正依頼（Request changes）** が来ました。GitHub タブの PR で内容を確認し、search.js を直してコミット → push しよう。PR を作り直す必要はありません。",
+      "hints": ["search.js を、q が空なら [] を返す形に書き換える", "echo \"export function search(q) { if (!q) return []; return find(q); }\" > search.js", "git commit -am \"handle empty query\" → git push"],
+      "answer": ["echo \"export function search(q) { if (!q) return []; return find(q); }\" > search.js", "git commit -am \"handle empty query\"", "git push"],
+      "check": [{ "type": "fileContent", "path": "search.js", "area": "head", "contains": "if (!q)" }, { "type": "remoteEquals", "ref": "feature/search" }],
+      "explain": "同じブランチに push したので、PR #1 に新しいコミットが自動で追加されました（Commits タブが 2 になっています）。"
+    },
+    {
+      "before": [{ "type": "review", "author": "Sato", "state": "approved", "body": "LGTM! ありがとうございます。" }],
+      "instruction": "Sato さんが承認（Approve）してくれました。PR をマージして、ブランチも片付けよう：`gh pr merge --merge --delete-branch`（GitHub タブのボタンでもOK）。",
+      "hints": ["--merge はマージコミットを作る方式、--delete-branch でブランチも消します", "gh pr merge --merge --delete-branch"],
+      "answer": ["gh pr merge --merge --delete-branch"],
+      "check": [{ "type": "prState", "pr": 1, "state": "merged" }]
+    },
+    {
+      "instruction": "GitHub の main は進みましたが、手元の main はまだ古いままです。main で git pull して追いつこう。",
+      "hints": ["今いるブランチは？（gh が main に切り替えてくれています）", "git pull"],
+      "answer": ["git pull"],
+      "check": [{ "type": "remoteEquals", "ref": "main" }, { "type": "fileContent", "path": "search.js", "contains": "if (!q)" }],
+      "explain": "これで1周です：ブランチ → push → PR → レビュー → 修正 → 承認 → マージ → pull。"
+    },
+    {
+      "type": "quiz",
+      "question": "レビューで修正を頼まれたら、どうする？",
+      "choices": ["PR を閉じて、新しい PR を作り直す", "同じブランチで修正をコミットして push する（PR に自動で反映される）", "main に直接 push する"],
+      "answer": 1,
+      "explain": "PR は「ブランチ」に紐づいています。同じブランチに push すれば、その PR に追加されます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "pull"]
+}

@@ -16,23 +16,61 @@ export type Commit = {
   author: Signature;
   committer: Signature;
   message: string; // 末尾の改行は含めない
+  /** 末尾に改行を付けずに保存する（実 Git の git stash -m のメッセージだけがこうなる） */
+  noNewline?: boolean;
 };
 
-export type GitObject = Blob | Tree | Commit;
+/** 注釈付きタグ（git tag -a） */
+export type Tag = { type: 'tag'; object: Oid; objectType: 'commit'; tag: string; tagger: Signature; message: string };
+
+export type GitObject = Blob | Tree | Commit | Tag;
 
 export type ReflogEntry = { ref: string; old: Oid | null; new: Oid; message: string; time: number };
 export type StashEntry = { oid: Oid; message: string };
 
 export type Head = { type: 'symbolic'; ref: string } | { type: 'detached'; oid: Oid };
 
-export type InProgress = {
+type InProgressBase = {
+  conflicts: Path[]; // 未解消のパス（実 Git のステージ 1〜3 の代わり）
+  affected: Path[]; // --abort で元に戻すパス
+};
+
+export type MergeInProgress = InProgressBase & {
   op: 'merge';
   theirs: Oid; // MERGE_HEAD
   theirsName: string;
   message: string;
-  conflicts: Path[]; // 未解消のパス（実 Git のステージ 1〜3 の代わり）
-  affected: Path[]; // merge --abort で HEAD に戻すパス
 };
+
+/** rebase -i の todo の1行 */
+export type TodoItem = { action: 'pick' | 'reword' | 'edit' | 'squash' | 'fixup' | 'drop'; oid: Oid };
+
+/** cherry-pick / revert / rebase の共通の「順に当てていく」状態（実 Git の sequencer） */
+export type SequenceInProgress = InProgressBase & {
+  op: 'cherry-pick' | 'revert' | 'rebase';
+  /** 今当てようとして止まっているコミット */
+  current: TodoItem | null;
+  /** まだ当てていないコミット */
+  todo: TodoItem[];
+  /** 止まった理由（conflict：衝突、edit：edit 指示、editor：エディタ待ち） */
+  stopped: 'conflict' | 'edit' | 'editor' | null;
+  /** 作るコミットのメッセージ（衝突解消後の commit / --continue で使う） */
+  message: string;
+  /** 1回の操作で作るコミットに共通の時刻 */
+  time: number;
+  /** 操作前の HEAD（--abort で戻す先） */
+  origHead: Oid;
+  /** rebase：操作前のブランチ（detached なら null）と移動先 */
+  headName?: string | null;
+  onto?: Oid;
+  interactive?: boolean;
+  /** rebase -i：エディタで編集中の内容 */
+  editor?: { path: Path; text: string; purpose: 'todo' | 'message' };
+  /** squash / fixup の連続でまとめているメッセージ */
+  squash?: { messages: { text: string; skip: boolean }[]; author: Signature; base: Oid; editMessage: boolean };
+};
+
+export type InProgress = MergeInProgress | SequenceInProgress;
 
 export type RepoState = {
   initialized: boolean; // false の間は git init 以外の git コマンドが失敗する
@@ -57,13 +95,59 @@ export type RepoState = {
   };
 };
 
-export type PullRequest = { id: number; title: string; head: string; base: string; state: 'open' | 'merged' | 'closed' };
-export type BranchProtection = { branch: string; requirePullRequest: boolean };
+export type Review = { author: string; state: 'approved' | 'changes_requested' | 'commented'; body: string; time: number };
+/** PR のコメント。path / line があれば「Files changed」の行へのコメント */
+export type PrComment = { author: string; body: string; time: number; path?: Path; line?: number };
+export type MergeMethod = 'merge' | 'squash' | 'rebase';
+
+export type PullRequest = {
+  number: number;
+  title: string;
+  body: string;
+  author: string;
+  /** origin 上のブランチ名 */
+  head: string;
+  base: string;
+  state: 'open' | 'merged' | 'closed';
+  draft?: boolean;
+  reviews: Review[];
+  comments: PrComment[];
+  createdAt: number;
+  merged?: { method: MergeMethod; oid: Oid; by: string; time: number };
+};
+
+export type Issue = { number: number; title: string; body: string; author: string; state: 'open' | 'closed'; closedBy?: number };
+
+export type BranchProtection = {
+  branch: string;
+  /** main へ直接 push できず、PR を通す必要がある */
+  requirePullRequest: boolean;
+  /** マージに必要な承認（Approve）の数 */
+  requiredApprovals?: number;
+  /** CI のチェックが通っていないとマージできない */
+  requireStatusChecks?: boolean;
+  /** CODEOWNERS に書かれた人の承認が必要 */
+  requireCodeOwnerReviews?: boolean;
+};
+
+/** 模擬 CI のチェック。failIf の文字列がファイルにあれば失敗する（なければ常に成功） */
+export type CiRule = { name: string; description?: string; failIf?: { path: Path; contains: string } };
+
+export type Hosting = {
+  pullRequests: PullRequest[];
+  protections: BranchProtection[];
+  issues?: Issue[];
+  ci?: CiRule[];
+  /** PR と Issue で共通の通し番号の次の値 */
+  nextNumber?: number;
+  /** 許可するマージ方式（GitHub のリポジトリ設定） */
+  mergeMethods?: MergeMethod[];
+};
 
 export type World = {
   local: RepoState;
   remotes: Record<string, RepoState>;
-  hosting: { pullRequests: PullRequest[]; protections: BranchProtection[] };
+  hosting: Hosting;
   clock: number; // 決定的な時刻（UNIX 秒）。コミットごとに進む
 };
 
@@ -96,6 +180,27 @@ export type GitEvent =
   | { type: 'PUSH_REJECTED'; remote: string; branch: string; reason: 'fetch first' | 'non-fast-forward' }
   | { type: 'UPSTREAM_SET'; branch: string; upstream: string }
   | { type: 'TEAMMATE_PUSHED'; author: string; remote: string; branch: string; oid: Oid }
+  | { type: 'RESET'; mode: 'soft' | 'mixed' | 'hard'; ref: string; from: Oid; to: Oid; lost: Oid[] }
+  | { type: 'COMMIT_AMENDED'; from: Oid; to: Oid }
+  | { type: 'REVERTED'; target: Oid; oid: Oid }
+  | { type: 'CHERRY_PICKED'; from: Oid; oid: Oid }
+  | { type: 'REBASED'; branch: string | null; from: Oid; to: Oid; onto: Oid; count: number }
+  | { type: 'SEQUENCE_STOPPED'; op: 'cherry-pick' | 'revert' | 'rebase'; reason: 'conflict' | 'edit' | 'editor'; oid: Oid | null }
+  | { type: 'SEQUENCE_ABORTED'; op: 'cherry-pick' | 'revert' | 'rebase' }
+  | { type: 'EDITOR_OPENED'; path: Path; purpose: 'todo' | 'message' }
+  | { type: 'STASHED'; oid: Oid; message: string }
+  | { type: 'STASH_APPLIED'; oid: Oid; dropped: boolean; conflict: boolean }
+  | { type: 'STASH_DROPPED'; oid: Oid }
+  | { type: 'TAG_CREATED'; name: string; oid: Oid; annotated: boolean }
+  | { type: 'TAG_DELETED'; name: string }
+  | { type: 'PR_OPENED'; number: number; author: string; head: string; base: string }
+  | { type: 'PR_REVIEWED'; number: number; author: string; state: Review['state'] }
+  | { type: 'PR_COMMENTED'; number: number; author: string }
+  | { type: 'PR_MERGED'; number: number; method: MergeMethod; oid: Oid; base: string }
+  | { type: 'PR_CLOSED'; number: number }
+  | { type: 'ISSUE_CLOSED'; number: number; by: number }
+  | { type: 'PROTECTION_CHANGED'; branch: string }
+  | { type: 'PUSH_PROTECTED'; branch: string; reason: string }
   | { type: 'CLEAR' };
 
 export type Tone = 'normal' | 'green' | 'red' | 'yellow' | 'cyan' | 'dim' | 'error' | 'hint';

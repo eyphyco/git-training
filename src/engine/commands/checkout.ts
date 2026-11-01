@@ -19,7 +19,7 @@ export const checkout: CommandDef = {
     }
     const [name, start] = positional;
     if (opts['new-branch'] || opts['force-new-branch']) {
-      createBranchAndSwitch(ctx, name, start, 'checkout');
+      createBranchAndSwitch(ctx, name, start);
       ctx.hint(MODERN);
       return;
     }
@@ -27,16 +27,16 @@ export const checkout: CommandDef = {
     if (repo.refs.heads[name] && !opts.detach) {
       if (name === currentBranch(repo)) ctx.out(`Already on '${name}'`);
       else {
-        moveHead(ctx, { branch: name }, 'checkout');
+        moveHead(ctx, { branch: name });
         ctx.out(`Switched to branch '${name}'`);
       }
       ctx.hint(MODERN);
       return;
     }
-    if (!repo.refs.heads[name] && !opts.detach && dwimTrackingBranch(ctx, name, 'checkout')) return;
+    if (!repo.refs.heads[name] && !opts.detach && dwimTrackingBranch(ctx, name)) return;
     const oid = resolveRev(repo, name);
     if (oid) {
-      moveHead(ctx, { detach: oid }, 'checkout');
+      moveHead(ctx, { detach: oid });
       ctx.out(`Note: switching to '${name}'.`);
       ctx.out('');
       ctx.out("You are in 'detached HEAD' state. You can look around, make experimental");

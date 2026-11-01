@@ -11,7 +11,7 @@ type Side = Record<Path, { oid: Oid; content: string }>;
 
 const ZERO = '0000000';
 
-function printFileDiff(ctx: Ctx, path: Path, a?: { oid: Oid; content: string }, b?: { oid: Oid; content: string }) {
+export function printFileDiff(ctx: Ctx, path: Path, a?: { oid: Oid; content: string }, b?: { oid: Oid; content: string }) {
   ctx.out(`diff --git a/${path} b/${path}`, 'normal');
   if (!a) ctx.out('new file mode 100644');
   if (!b) ctx.out('deleted file mode 100644');

@@ -1,7 +1,7 @@
 // World の生成と、レッスン定義の setup（設計書 §7）から初期状態を組み立てる。
 import { produce } from 'immer';
 import { getBlob, readTree, getCommit, writeBlob, writeCommit, writeTree } from './model/objects';
-import type { GitEvent, Oid, Path, RepoState, World } from './model/types';
+import type { GitEvent, Hosting, Oid, Path, RepoState, World } from './model/types';
 import { copyObjects, DEFAULT_URL, emptyHosted } from './remote';
 
 export const START_TIME = 1767225600; // 2026-01-01 00:00:00 UTC
@@ -52,6 +52,8 @@ export type Setup = {
   tracking?: Record<string, string>;
   /** 追跡ブランチの設定（"main": "origin/main"）。省略時は同名のリモートブランチ */
   upstream?: Record<string, string>;
+  /** GitHub 側の設定（ブランチ保護・Issue・CI など）。PR はステップの before で作る */
+  hosting?: Omit<Partial<Hosting>, 'pullRequests'>;
 };
 
 /** setup から World を作る。aliases はレッスン内のコミット id（c1 など）→ 実際の SHA-1 */
@@ -60,6 +62,7 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
   const world = produce(emptyWorld(), (w) => {
     const repo = w.local;
     repo.initialized = setup.initialized ?? true;
+    if (setup.hosting) Object.assign(w.hosting, structuredClone(setup.hosting));
     if (setup.user) repo.config.user = { ...setup.user };
     const filesOf: Record<string, Record<Path, Oid>> = {};
     for (const c of setup.commits ?? []) {
@@ -109,6 +112,20 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
     }
 
     const head = setup.head ?? 'main';
+    // 今のブランチに至るコミットを順に作ったものとして reflog を入れておく（git reflog / HEAD@{n} 用）
+    const headTip = head.startsWith('detached:') ? aliases[head.slice(9)] : repo.refs.heads[head];
+    const chain = new Set<Oid>();
+    for (let o: Oid | undefined = headTip; o; o = getCommit(repo, o).parents[0]) chain.add(o);
+    let prev: Oid | null = null;
+    for (const c of setup.commits ?? []) {
+      const oid = aliases[c.id];
+      if (!chain.has(oid)) continue;
+      const commit = getCommit(repo, oid);
+      const msg = `${prev ? (commit.parents.length > 1 ? 'commit (merge)' : 'commit') : 'commit (initial)'}: ${c.msg.split('\n')[0]}`;
+      repo.reflog.push({ ref: 'HEAD', old: prev, new: oid, message: msg, time: commit.committer.time });
+      if (!head.startsWith('detached:')) repo.reflog.push({ ref: `refs/heads/${head}`, old: prev, new: oid, message: msg, time: commit.committer.time });
+      prev = oid;
+    }
     if (head.startsWith('detached:')) repo.head = { type: 'detached', oid: aliases[head.slice(9)] };
     else repo.head = { type: 'symbolic', ref: head };
     const headCommit = repo.head.type === 'detached' ? repo.head.oid : repo.refs.heads[repo.head.ref];

@@ -33,9 +33,9 @@
     "detail": "`-m \"メッセージ\"` でメッセージを指定。`-a` を付けると追跡中ファイルの変更を自動で add します（未追跡ファイルは対象外）。マージ中は `-m` を省くと既定のメッセージになります。"
   },
   "git commit --amend": {
-    "summary": "直前のコミットを作り直す（履歴を書き換える）",
+    "summary": "直前のコミットを作り直す（メッセージ修正・入れ忘れの追加）。push 済みには使わない",
     "danger": "caution",
-    "category": "基本"
+    "category": "履歴の修正（第6章）"
   },
   "git log": {
     "summary": "コミットの履歴を新しい順に表示する",
@@ -123,24 +123,26 @@
     "detail": "ステージとワークツリーまで巻き戻し、未コミットの変更は消えます。第6章で安全な使い方と復旧方法（reflog）を学びます。"
   },
   "git reset": {
-    "summary": "ブランチの位置やステージを巻き戻す（第6章）",
+    "summary": "ブランチを指定コミットまで戻す（既定の --mixed は変更をワークツリーに残す）。ファイルを指定するとステージから外すだけ",
     "danger": "caution",
     "category": "履歴の修正（第6章）"
   },
   "git revert": {
-    "summary": "指定コミットを打ち消す新しいコミットを作る（第6章）",
+    "summary": "指定コミットを打ち消す新しいコミットを作る。履歴を書き換えないので push 済みでも安全",
     "danger": "safe",
     "category": "履歴の修正（第6章）"
   },
   "git rebase": {
-    "summary": "コミットを別の土台の上に付け替える。履歴が書き換わる（第6章）",
+    "summary": "今のブランチのコミットを、指定したブランチの先に作り直して付け替える",
     "danger": "caution",
-    "category": "履歴の修正（第6章）"
+    "category": "履歴の修正（第6章）",
+    "detail": "`git rebase main` で一直線の履歴に。コミット ID が変わるので、push 済みの共有ブランチには使わない。衝突したら直して `git add` → `git rebase --continue`（中止は `--abort`）。"
   },
   "git stash": {
-    "summary": "未コミットの変更を一時退避する（第6章）",
+    "summary": "未コミットの変更を一時退避し、ワークツリーをきれいにする",
     "danger": "safe",
-    "category": "履歴の修正（第6章）"
+    "category": "履歴の修正（第6章）",
+    "detail": "`git stash list` で一覧、`git stash pop` で戻す、`-u` で未追跡ファイルも退避。"
   },
   "ls": {
     "summary": "ファイルの一覧を表示する（-a で隠しファイルも）",
@@ -198,5 +200,82 @@
     "summary": "ブランチ一覧に、追跡先と ahead / behind を表示する",
     "danger": "safe",
     "category": "ブランチとマージ"
+  },
+  "git rebase -i": {
+    "summary": "コミットの並べ替え・まとめ（squash / fixup）・メッセージ修正（reword）・削除（drop）",
+    "danger": "caution",
+    "category": "履歴の修正（第6章）",
+    "detail": "エディタに todo が開くので、行の先頭を書き換えて保存します。"
+  },
+  "git reset --soft": {
+    "summary": "ブランチだけ戻し、変更はステージに残す（コミットのまとめ直しに使う）",
+    "danger": "caution",
+    "category": "履歴の修正（第6章）"
+  },
+  "git stash pop": {
+    "summary": "最新の stash を戻して一覧から消す（衝突したら残る）",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）"
+  },
+  "git cherry-pick": {
+    "summary": "指定したコミットの変更だけを、今のブランチに新しいコミットとしてコピーする",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）"
+  },
+  "git reflog": {
+    "summary": "HEAD やブランチが動いた記録を表示する。消えたコミットの救出に使う",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）",
+    "detail": "`git reset --hard HEAD@{1}` で直前の位置に戻れます。"
+  },
+  "git tag": {
+    "summary": "コミットにタグ（動かない名札）を付ける。-a -m で注釈付きタグ",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）"
+  },
+  "git show": {
+    "summary": "コミットの内容（メッセージと差分）を表示する",
+    "danger": "safe",
+    "category": "基本"
+  },
+  "gh pr create": {
+    "summary": "今のブランチから PR を作る（--title / --body / --base / --draft / --fill）",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr list": {
+    "summary": "PR の一覧を表示する",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr view": {
+    "summary": "PR の詳細（状態・レビュー・CI・マージを止めている理由）を表示する",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr checkout": {
+    "summary": "PR のブランチを手元に取り込んで切り替える（レビューで動かして確かめる）",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr review": {
+    "summary": "PR をレビューする（--approve / --request-changes / --comment、-b で本文）。自分の PR は承認できない",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr merge": {
+    "summary": "PR をマージする（--merge / --squash / --rebase、--delete-branch でブランチも削除）",
+    "danger": "caution",
+    "category": "GitHub（第5章）"
+  },
+  "gh pr checks": {
+    "summary": "PR の CI（チェック）の結果を表示する",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
+  },
+  "gh issue list": {
+    "summary": "Issue の一覧を表示する",
+    "danger": "safe",
+    "category": "GitHub（第5章）"
   }
 }

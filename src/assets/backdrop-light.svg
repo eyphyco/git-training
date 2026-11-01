@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" preserveAspectRatio="xMidYMid slice">
+  <!--
+    下地の「写真」（ライト）。WHITEBOARD の、焦点を外した明るいオフィスと街並みの見え方を作る。
+    実写は置かない（出どころの分からない写真を配らないため）。
+
+    窓の外の空・ビル・手前の観葉植物を、輪郭が溶けるまでぼかした面で置く。
+    明暗の振れ幅は狭く保つ（#c9d6e6〜#f4f8fc）。この上にガラスの板が載り、
+    板を透けた地の明るさが場所で大きく動くと、板の上の文字のコントラストが
+    場所で変わってしまう（contrast が実描画から測る）。
+  -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9f1fa" />
+      <stop offset="0.6" stop-color="#dde8f4" />
+      <stop offset="1" stop-color="#e6edf3" />
+    </linearGradient>
+    <filter id="defocus" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="46" />
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)" />
+  <g filter="url(#defocus)">
+    <!-- 窓の光 -->
+    <ellipse cx="1180" cy="180" rx="420" ry="220" fill="#f6f9fd" />
+    <ellipse cx="380" cy="120" rx="360" ry="160" fill="#f2f7fc" />
+    <!-- 遠くのビル（青灰） -->
+    <rect x="880" y="260" width="140" height="520" fill="#c9d6e6" />
+    <rect x="1060" y="200" width="110" height="600" fill="#cfdbe9" />
+    <rect x="1230" y="300" width="170" height="480" fill="#c7d4e4" />
+    <rect x="560" y="320" width="120" height="460" fill="#d1dcea" />
+    <!-- 窓枠の柱 -->
+    <rect x="760" y="0" width="38" height="1000" fill="#e8eef5" />
+    <rect x="1460" y="0" width="34" height="1000" fill="#e4ebf3" />
+    <!-- 手前の観葉植物（緑は淡く。地を青に保つ） -->
+    <ellipse cx="140" cy="760" rx="210" ry="260" fill="#cddfd2" />
+    <ellipse cx="1520" cy="820" rx="180" ry="220" fill="#d0e0d5" />
+    <!-- 床の反射 -->
+    <ellipse cx="800" cy="980" rx="900" ry="120" fill="#eef3f8" />
+  </g>
+</svg>
