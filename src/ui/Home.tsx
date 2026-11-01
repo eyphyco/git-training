@@ -93,6 +93,9 @@ export function Home() {
         <a href={href.commands()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-commands">
           📖 コマンド辞典
         </a>
+        <a href={href.compare()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-compare">
+          ⚖️ 比較ビュー
+        </a>
       </section>
 
       <Dashboard />

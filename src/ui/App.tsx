@@ -4,6 +4,7 @@ import { chapterOf } from '../lesson/content';
 import { isChapterUnlocked, useProgress } from '../store/progress';
 import { ChapterPage } from './ChapterPage';
 import { CommandsPage } from './CommandsPage';
+import { ComparePage } from './ComparePage';
 import { FreePlayPage } from './FreePlayPage';
 import { Home } from './Home';
 import { LessonPage } from './LessonPage';
@@ -28,6 +29,7 @@ export function App() {
   if (route.name === 'chapter') page = <ChapterPage id={route.id} />;
   else if (route.name === 'play') page = <FreePlayPage state={route.state} />;
   else if (route.name === 'commands') page = <CommandsPage q={route.q} />;
+  else if (route.name === 'compare') page = <ComparePage id={route.id} />;
   else if (route.name === 'lesson') {
     const ch = chapterOf(route.id);
     page =
