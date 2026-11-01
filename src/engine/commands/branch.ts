@@ -99,6 +99,6 @@ export const branch: CommandDef = {
     }
     repo.refs.heads[name] = oid;
     logRef(repo, `refs/heads/${name}`, null, oid, `branch: Created from ${start ?? 'HEAD'}`, ctx.world.clock);
-    ctx.emit({ type: 'BRANCH_CREATED', name, oid });
+    ctx.emit({ type: 'BRANCH_CREATED', name, oid, from: start ?? currentBranch(repo) ?? undefined });
   },
 };

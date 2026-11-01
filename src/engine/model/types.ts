@@ -153,6 +153,9 @@ export type Hosting = {
   nextNumber?: number;
   /** 許可するマージ方式（GitHub のリポジトリ設定） */
   mergeMethods?: MergeMethod[];
+  /** チームのブランチ戦略（F-13）。ルール違反は violations に積む */
+  strategy?: 'github-flow' | 'git-flow' | 'gitlab-flow' | 'trunk';
+  violations?: string[];
 };
 
 export type World = {
@@ -175,11 +178,11 @@ export type GitEvent =
   | { type: 'FILE_RESTORED'; path: Path }
   | { type: 'COMMIT_CREATED'; oid: Oid; parents: Oid[]; branch: string | null; message: string }
   | { type: 'REF_MOVED'; ref: string; from: Oid | null; to: Oid; reason: 'commit' | 'fast-forward' | 'merge' | 'branch' }
-  | { type: 'BRANCH_CREATED'; name: string; oid: Oid }
+  | { type: 'BRANCH_CREATED'; name: string; oid: Oid; /** 起点に指定した名前（省略時は作ったときのブランチ） */ from?: string }
   | { type: 'BRANCH_DELETED'; name: string; oid: Oid }
   | { type: 'BRANCH_RENAMED'; from: string; to: string }
   | { type: 'HEAD_MOVED'; from: string; to: string; detached: boolean }
-  | { type: 'MERGE_FAST_FORWARD'; branch: string; from: Oid; to: Oid }
+  | { type: 'MERGE_FAST_FORWARD'; branch: string; from: Oid; to: Oid; theirs?: string }
   | { type: 'MERGE_COMMIT'; oid: Oid; theirs: string }
   | { type: 'CONFLICT'; paths: Path[]; theirs: string }
   | { type: 'MERGE_ABORTED' }

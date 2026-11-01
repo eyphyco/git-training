@@ -177,6 +177,10 @@ export function evaluate(check: Check, ctx: CheckContext): CheckResult {
         (check.requireStatusChecks === undefined || !!p.requireStatusChecks === check.requireStatusChecks);
       return { ok, label: `${check.branch} にブランチ保護が設定されている${check.requiredApprovals ? `（承認 ${check.requiredApprovals} 件以上）` : ''}` };
     }
+    case 'noViolations': {
+      const v = ctx.world.hosting.violations ?? [];
+      return { ok: v.length === 0, label: v.length ? `ブランチ戦略のルール違反がない（今は ${v.length} 件）` : 'ブランチ戦略のルール違反がない' };
+    }
     case 'stashCount':
       return { ok: repo.stash.length === check.count, label: `stash が ${check.count} 件` };
     case 'inProgress':

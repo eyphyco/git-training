@@ -40,7 +40,7 @@ export const worktree: CommandDef = {
             oid = start;
             repo.refs.heads[newBranch] = oid;
             logRef(repo, `refs/heads/${newBranch}`, null, oid, `branch: Created from ${commitish ?? 'HEAD'}`, ctx.world.clock);
-            ctx.emit({ type: 'BRANCH_CREATED', name: newBranch, oid });
+            ctx.emit({ type: 'BRANCH_CREATED', name: newBranch, oid, from: commitish ?? (repo.head.type === 'symbolic' ? repo.head.ref : undefined) });
             label = `new branch '${newBranch}'`;
           }
           head = { type: 'symbolic', ref: newBranch };

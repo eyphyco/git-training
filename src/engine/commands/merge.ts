@@ -86,7 +86,7 @@ export function mergeInto(ctx: Ctx, theirs: Oid, name: string, mo: MergeOptions)
       logRef(repo, 'HEAD', ours, theirs, `merge ${name}: Fast-forward`, ctx.world.clock);
     }
     printSummary(ctx, treeDiffStat(repo, oursFiles, theirsFiles), true);
-    ctx.emit({ type: 'MERGE_FAST_FORWARD', branch: branch ?? 'HEAD', from: ours, to: theirs });
+    ctx.emit({ type: 'MERGE_FAST_FORWARD', branch: branch ?? 'HEAD', from: ours, to: theirs, theirs: name });
     ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: ours, to: theirs, reason: 'fast-forward' });
     return;
   }
