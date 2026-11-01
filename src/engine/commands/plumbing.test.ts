@@ -41,3 +41,12 @@ describe('内部構造を見るコマンド', () => {
     expect(fresh.world.local.refs.tags['v1.0.0']).toBeTruthy();
   });
 });
+
+describe('.git の中のファイル', () => {
+  it('cat .git/HEAD と refs', () => {
+    const r = repoWith(setup);
+    expect(text(execute(r.world, 'cat .git/HEAD'))).toBe('ref: refs/heads/main');
+    expect(text(execute(r.world, 'cat .git/refs/heads/main'))).toBe(r.aliases.c2);
+    expect(execute(r.world, 'cat .git/objects/ab/cd').ok).toBe(false);
+  });
+});

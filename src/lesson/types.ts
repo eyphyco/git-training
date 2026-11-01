@@ -26,6 +26,11 @@ export type Check =
   | { type: 'protection'; branch: string; requirePullRequest?: boolean; requiredApprovals?: number; requireStatusChecks?: boolean }
   | { type: 'stashCount'; count: number }
   | { type: 'noViolations' }
+  | { type: 'remoteTag'; name: string; remote?: string }
+  | { type: 'hookExists'; name: string }
+  | { type: 'worktreeExists'; path: string; exists?: boolean }
+  | { type: 'bisect'; state: 'active' | 'none' | 'found'; commit?: string }
+  | { type: 'containsCommit'; ref: string; commit: string }
   | { type: 'inProgress'; op: 'merge' | 'rebase' | 'cherry-pick' | 'revert' | null }
   | { type: 'tagExists'; name: string; annotated?: boolean; at?: string };
 

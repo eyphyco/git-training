@@ -29,6 +29,24 @@ function topEntries(ctx: Ctx, all: boolean): string[] {
   return [...names].filter((n) => all || !n.startsWith('.')).sort();
 }
 
+/** .git の中の、文字だけのファイル（HEAD と refs）を読む（第8章） */
+function gitFile(ctx: Ctx, p: string): string | undefined {
+  const repo = ctx.repo;
+  if (p === '.git/HEAD') return repo.head.type === 'symbolic' ? `ref: refs/heads/${repo.head.ref}\n` : `${repo.head.oid}\n`;
+  const m = p.match(/^\.git\/refs\/(heads|tags)\/(.+)$/);
+  if (m) {
+    const oid = m[1] === 'heads' ? repo.refs.heads[m[2]] : repo.refs.tags[m[2]];
+    return oid ? `${oid}\n` : undefined;
+  }
+  const r = p.match(/^\.git\/refs\/remotes\/([^/]+)\/(.+)$/);
+  if (r) {
+    const oid = repo.refs.remotes[r[1]]?.[r[2]];
+    return oid ? `${oid}\n` : undefined;
+  }
+  if (p.startsWith('.git/objects/')) fail(`cat: ${p}: オブジェクトは zlib で圧縮された形で保存されています`, '中身は git cat-file -p <ID> で見ます。');
+  return undefined;
+}
+
 export const SHELL: Record<string, ShellDef> = {
   ls: {
     name: 'ls',
@@ -52,7 +70,7 @@ export const SHELL: Record<string, ShellDef> = {
       if (!args.length) fail('cat: ファイル名を指定してください');
       for (const a of args) {
         const p = a.replace(/^\.\//, '');
-        const c = p.startsWith(HOOK_DIR) ? ctx.repo.hooks?.[p.slice(HOOK_DIR.length)] : ctx.repo.workingTree[p];
+        const c = p.startsWith(HOOK_DIR) ? ctx.repo.hooks?.[p.slice(HOOK_DIR.length)] : p.startsWith('.git/') ? gitFile(ctx, p) : ctx.repo.workingTree[p];
         if (c === undefined) fail(`cat: ${a}: No such file or directory`);
         for (const l of c.replace(/\n$/, '').split('\n')) ctx.out(l);
       }

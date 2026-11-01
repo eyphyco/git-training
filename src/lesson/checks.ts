@@ -1,6 +1,7 @@
 // 判定条件（check）の評価。結果は日本語の説明付きで返し、「答え合わせ」ボタンにも使う。
 import { getBlob, getCommit, hashBlob, commitFiles, peel } from '../engine/model/objects';
 import { latestReviews } from '../hosting/model';
+import { worktreePaths } from '../engine/worktrees';
 import { ancestors, currentBranch, headOid, resolveRev } from '../engine/model/refs';
 import { computeStatus } from '../engine/model/status';
 import { aheadBehind, upstreamOf } from '../engine/remote';
@@ -180,6 +181,29 @@ export function evaluate(check: Check, ctx: CheckContext): CheckResult {
     case 'noViolations': {
       const v = ctx.world.hosting.violations ?? [];
       return { ok: v.length === 0, label: v.length ? `ブランチ戦略のルール違反がない（今は ${v.length} 件）` : 'ブランチ戦略のルール違反がない' };
+    }
+    case 'remoteTag': {
+      const r = ctx.world.remotes[check.remote ?? 'origin'];
+      return { ok: !!r?.refs.tags[check.name], label: `${check.remote ?? 'origin'} にタグ ${check.name} がある（push 済み）` };
+    }
+    case 'hookExists':
+      return { ok: repo.hooks?.[check.name] !== undefined, label: `.git/hooks/${check.name} がある` };
+    case 'worktreeExists': {
+      const has = worktreePaths(repo).includes(check.path);
+      return { ok: has === (check.exists ?? true), label: `作業フォルダ ${check.path} が${check.exists === false ? 'ない' : 'ある'}` };
+    }
+    case 'bisect': {
+      const b = repo.bisect;
+      const found = b?.log.find((l) => l.startsWith('# first bad commit: ['));
+      const foundOid = found?.slice(21, 61);
+      const want = check.commit ? resolve(ctx, check.commit) : null;
+      const ok = check.state === 'none' ? !b : check.state === 'active' ? !!b : !!foundOid && (!want || foundOid === want);
+      return { ok, label: check.state === 'none' ? 'bisect を終えている（git bisect reset 済み）' : check.state === 'active' ? 'bisect の途中' : `bisect で最初の bad コミット${check.commit ? `（${check.commit}）` : ''}を見つけた` };
+    }
+    case 'containsCommit': {
+      const tip = resolve(ctx, check.ref);
+      const c = resolve(ctx, check.commit);
+      return { ok: !!tip && !!c && ancestors(repo, tip).has(c), label: `${check.ref} に ${check.commit} が取り込まれている` };
     }
     case 'stashCount':
       return { ok: repo.stash.length === check.count, label: `stash が ${check.count} 件` };
