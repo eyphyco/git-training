@@ -2,6 +2,24 @@ import type { CommandDef, Ctx } from '../command';
 import { short } from '../model/objects';
 import { currentBranch, headOid } from '../model/refs';
 import { collapseUntracked, computeStatus } from '../model/status';
+import type { RepoState } from '../model/types';
+import { aheadBehind, upstreamOf } from '../remote';
+
+/** "Your branch is ahead of 'origin/main' by 1 commit." など、追跡ブランチとの関係 */
+export function trackingLines(repo: RepoState): string[] {
+  const branch = currentBranch(repo);
+  const up = upstreamOf(repo, branch);
+  const head = headOid(repo);
+  if (!up || !head) return [];
+  const theirs = repo.refs.remotes[up.remote]?.[up.branch];
+  if (!theirs) return [`Your branch is based on '${up.ref}', but the upstream is gone.`, '  (use "git branch --unset-upstream" to fixup)'];
+  const { ahead, behind } = aheadBehind(repo, head, theirs);
+  const n = (k: number) => `${k} commit${k === 1 ? '' : 's'}`;
+  if (!ahead && !behind) return [`Your branch is up to date with '${up.ref}'.`];
+  if (ahead && !behind) return [`Your branch is ahead of '${up.ref}' by ${n(ahead)}.`, '  (use "git push" to publish your local commits)'];
+  if (!ahead) return [`Your branch is behind '${up.ref}' by ${n(behind)}, and can be fast-forwarded.`, '  (use "git pull" to update your local branch)'];
+  return [`Your branch and '${up.ref}' have diverged,`, `and have ${ahead} and ${behind} different commits each, respectively.`, '  (use "git pull" if you want to integrate the remote branch with yours)'];
+}
 
 const LABEL = { added: 'new file:   ', modified: 'modified:   ', deleted: 'deleted:    ' } as const;
 
@@ -26,6 +44,11 @@ export const status: CommandDef = {
     const branch = currentBranch(repo);
     const head = headOid(repo);
     ctx.out(branch ? `On branch ${branch}` : `HEAD detached at ${short(head!)}`, branch ? 'normal' : 'red');
+    const tracking = trackingLines(repo);
+    if (tracking.length) {
+      for (const l of tracking) ctx.out(l);
+      ctx.out('');
+    }
     if (repo.inProgress?.op === 'merge') {
       if (s.conflicts.length) {
         ctx.out('You have unmerged paths.');

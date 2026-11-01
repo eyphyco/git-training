@@ -2,6 +2,7 @@
 import { produce } from 'immer';
 import { getBlob, readTree, getCommit, writeBlob, writeCommit, writeTree } from './model/objects';
 import type { GitEvent, Oid, Path, RepoState, World } from './model/types';
+import { copyObjects, DEFAULT_URL, emptyHosted } from './remote';
 
 export const START_TIME = 1767225600; // 2026-01-01 00:00:00 UTC
 
@@ -45,6 +46,12 @@ export type Setup = {
   /** ステージ済みにしておく変更（ワークツリーにも反映される） */
   staged?: Record<Path, string | null>;
   user?: { name: string; email: string };
+  /** GitHub 側のリポジトリ（commits の id でブランチを指定。オブジェクトは自動でコピーされる） */
+  remotes?: Record<string, { url?: string; branches: Record<string, string>; head?: string }>;
+  /** 手元が覚えているリモートの位置（"origin/main": "c2"）。省略時はリモートと同じ＝最新を fetch 済み */
+  tracking?: Record<string, string>;
+  /** 追跡ブランチの設定（"main": "origin/main"）。省略時は同名のリモートブランチ */
+  upstream?: Record<string, string>;
 };
 
 /** setup から World を作る。aliases はレッスン内のコミット id（c1 など）→ 実際の SHA-1 */
@@ -75,6 +82,32 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
       if (!aliases[id]) throw new Error(`setup: unknown commit ${id}`);
       repo.refs.heads[name] = aliases[id];
     }
+    for (const [name, r] of Object.entries(setup.remotes ?? {})) {
+      const hosted = emptyHosted();
+      const tips: Oid[] = [];
+      for (const [b, id] of Object.entries(r.branches)) {
+        if (!aliases[id]) throw new Error(`setup: unknown commit ${id}`);
+        hosted.refs.heads[b] = aliases[id];
+        tips.push(aliases[id]);
+      }
+      hosted.head = { type: 'symbolic', ref: r.head ?? 'main' };
+      copyObjects(repo as RepoState, hosted, tips);
+      w.remotes[name] = hosted;
+      repo.config.remotes = { ...(repo.config.remotes ?? {}), [name]: { url: r.url ?? DEFAULT_URL } };
+      if (!setup.tracking) repo.refs.remotes[name] = { ...hosted.refs.heads };
+    }
+    for (const [ref, id] of Object.entries(setup.tracking ?? {})) {
+      const [name, ...rest] = ref.split('/');
+      repo.refs.remotes[name] ??= {};
+      repo.refs.remotes[name][rest.join('/')] = aliases[id];
+    }
+    for (const b of Object.keys(repo.refs.heads)) {
+      const up = setup.upstream?.[b] ?? Object.keys(repo.refs.remotes).filter((r) => repo.refs.remotes[r][b]).map((r) => `${r}/${b}`)[0];
+      if (!up) continue;
+      const [r, ...rest] = up.split('/');
+      repo.config.branches = { ...(repo.config.branches ?? {}), [b]: { remote: r, merge: rest.join('/') } };
+    }
+
     const head = setup.head ?? 'main';
     if (head.startsWith('detached:')) repo.head = { type: 'detached', oid: aliases[head.slice(9)] };
     else repo.head = { type: 'symbolic', ref: head };
@@ -98,6 +131,17 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
     for (const [p, content] of Object.entries(setup.workingTree ?? {})) {
       if (content === null) delete repo.workingTree[p];
       else repo.workingTree[p] = content;
+    }
+    // リモートにしかないコミットは手元に持たない（fetch するまで見えない状態を再現する）
+    if (setup.remotes) {
+      const keep = emptyHosted();
+      const tips = [...Object.values(repo.refs.heads), ...Object.values(repo.refs.remotes).flatMap((r) => Object.values(r))];
+      copyObjects(repo as RepoState, keep, tips);
+      for (const oid of Object.keys(repo.objects)) {
+        const o = repo.objects[oid];
+        if (!keep.objects[oid] && (o.type === 'commit' || !Object.values(repo.index).includes(oid))) delete repo.objects[oid];
+      }
+      if (headCommit) copyObjects(keep, repo as RepoState, [headCommit]);
     }
   });
   return { world, aliases };

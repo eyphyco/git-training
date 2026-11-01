@@ -3,6 +3,7 @@ import { commitFiles, getCommit, short, subject } from '../model/objects';
 import { currentBranch, headOid, isValidBranchName, logRef, resolveRev } from '../model/refs';
 import type { Oid } from '../model/types';
 import { checkoutTree } from '../worktree';
+import { setUpstream } from '../remote';
 
 const headLabel = (ctx: Ctx) => currentBranch(ctx.repo) ?? short(headOid(ctx.repo)!);
 
@@ -18,7 +19,7 @@ export function moveHead(ctx: Ctx, target: { branch: string } | { detach: Oid },
   ctx.emit({ type: 'HEAD_MOVED', from: fromLabel, to: 'branch' in target ? target.branch : short(to!), detached: !('branch' in target) });
 }
 
-export function createBranchAndSwitch(ctx: Ctx, name: string, start: string | undefined, verb: string) {
+export function createBranchAndSwitch(ctx: Ctx, name: string, start: string | undefined, verb: string, tracking = false) {
   const repo = ctx.repo;
   if (!isValidBranchName(name)) fail(`fatal: '${name}' is not a valid branch name`, 'ブランチ名に空白や ~ ^ : などは使えません。');
   if (repo.refs.heads[name]) fail(`fatal: a branch named '${name}' already exists`, `「${name}」は既にあります。移動するだけなら git switch ${name} です。`);
@@ -36,7 +37,17 @@ export function createBranchAndSwitch(ctx: Ctx, name: string, start: string | un
   // まだコミットがない状態での -c は、生まれていないブランチ名を付け替えるだけ
   repo.head = { type: 'symbolic', ref: name };
   ctx.emit({ type: 'HEAD_MOVED', from: fromLabel, to: name, detached: false });
+  if (tracking) ctx.out(`branch '${name}' set up to track '${start}'.`);
   ctx.out(`Switched to a new branch '${name}'`);
+}
+
+export function dwimTrackingBranch(ctx: Ctx, name: string, verb: string): boolean {
+  const hits = Object.entries(ctx.repo.refs.remotes).filter(([, refs]) => refs[name]);
+  if (hits.length !== 1) return false;
+  const [remote] = hits[0];
+  createBranchAndSwitch(ctx, name, `${remote}/${name}`, verb, true);
+  setUpstream(ctx.repo, name, remote, name);
+  return true;
 }
 
 export const switchCmd: CommandDef = {
@@ -60,6 +71,8 @@ export const switchCmd: CommandDef = {
       return;
     }
     if (!repo.refs.heads[name]) {
+      // ローカルにないが origin/<name> があれば、追跡ブランチを作って移動する（実 Git の --guess）
+      if (dwimTrackingBranch(ctx, name, 'switch')) return;
       if (resolveRev(repo, name))
         fail(`fatal: a branch is expected, got commit '${name}'\nhint: If you want to detach HEAD at the commit, try again with the --detach option.`, 'コミットに直接移動するには git switch --detach <コミット> と書きます。');
       fail(`fatal: invalid reference: ${name}`, `「${name}」というブランチはありません。作るなら git switch -c ${name} です。`);
