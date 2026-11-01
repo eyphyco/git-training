@@ -100,7 +100,7 @@ function sig(s: Signature): string {
 
 export function serializeCommit(c: Commit): string {
   const lines = [`tree ${c.tree}`, ...c.parents.map((p) => `parent ${p}`), `author ${sig(c.author)}`, `committer ${sig(c.committer)}`];
-  return `${lines.join('\n')}\n\n${c.message}\n`;
+  return `${lines.join('\n')}\n\n${c.message}${c.noNewline ? '' : '\n'}`;
 }
 
 export function writeCommit(repo: RepoState, c: Omit<Commit, 'type'>): Oid {

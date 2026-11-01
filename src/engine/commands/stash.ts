@@ -44,7 +44,7 @@ function push(ctx: Ctx, message: string | undefined, untracked: boolean) {
   const wFiles: Record<Path, Oid> = {};
   for (const p of Object.keys(repo.index)) if (p in repo.workingTree) wFiles[p] = writeBlob(repo, repo.workingTree[p]);
   const msg = message ? `On ${branch}: ${message}` : `WIP on ${branch}: ${headLine}`;
-  const w = writeCommit(repo, { tree: writeTree(repo, wFiles), parents, ...sig, message: msg });
+  const w = writeCommit(repo, { tree: writeTree(repo, wFiles), parents, ...sig, message: msg, ...(message ? { noNewline: true } : {}) });
   repo.stash.unshift({ oid: w, message: msg });
   logRef(repo, 'refs/stash', null, w, msg, time);
 

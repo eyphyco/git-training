@@ -16,6 +16,8 @@ export type Commit = {
   author: Signature;
   committer: Signature;
   message: string; // 末尾の改行は含めない
+  /** 末尾に改行を付けずに保存する（実 Git の git stash -m のメッセージだけがこうなる） */
+  noNewline?: boolean;
 };
 
 /** 注釈付きタグ（git tag -a） */
