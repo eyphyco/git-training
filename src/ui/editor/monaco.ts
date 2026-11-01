@@ -11,6 +11,11 @@ import 'monaco-editor/languages/definitions/css/register';
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
 
+// ガラス風の画面に合わせて、エディタの背景を透明にする
+const clear = { 'editor.background': '#00000000', 'editorGutter.background': '#00000000', 'editor.lineHighlightBackground': '#ffffff22' };
+monaco.editor.defineTheme('glass-light', { base: 'vs', inherit: true, rules: [], colors: { ...clear, 'editor.lineHighlightBackground': '#ffffff55' } });
+monaco.editor.defineTheme('glass-dark', { base: 'vs-dark', inherit: true, rules: [], colors: clear });
+
 export { monaco };
 
 export function languageOf(path: string): string {

@@ -86,7 +86,7 @@ export function Terminal({ repo }: { repo: RepoState }) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-slate-950 font-mono text-[13px] leading-snug" onClick={() => window.getSelection()?.isCollapsed && inputRef.current?.focus()}>
+    <div className="flex h-full flex-col font-mono text-[13px] leading-snug" onClick={() => window.getSelection()?.isCollapsed && inputRef.current?.focus()}>
       <div className="flex-1 overflow-y-auto px-3 py-2" data-testid="terminal-output">
         {lines.map((l) =>
           l.kind === 'cmd' ? (
@@ -102,7 +102,7 @@ export function Terminal({ repo }: { repo: RepoState }) {
         {candidates.length > 0 && <div className="text-slate-400">{candidates.join('   ')}</div>}
         <div ref={bottom} />
       </div>
-      <div className="flex min-h-6 items-center gap-2 border-t border-slate-800 px-3 py-1 text-xs text-slate-400">
+      <div className="flex min-h-6 items-center gap-2 border-t border-white/10 px-3 py-1 text-xs text-slate-400">
         {info ? (
           <>
             <span className="text-slate-200">{info.key}</span>
@@ -113,7 +113,7 @@ export function Terminal({ repo }: { repo: RepoState }) {
           <span>Tab で補完 / ↑↓ で履歴 / help でコマンド一覧</span>
         )}
       </div>
-      <label className="flex items-center gap-2 border-t border-slate-800 px-3 py-2">
+      <label className="flex items-center gap-2 border-t border-white/10 px-3 py-2">
         <span className="shrink-0 text-emerald-400">{prompt}</span>
         <input
           ref={inputRef}

@@ -4,7 +4,7 @@ import { checkStep } from '../lesson/session';
 import { useLesson } from '../store/lesson';
 import { useProgress } from '../store/progress';
 
-const btn = 'rounded border border-slate-300 bg-white px-2 py-1 text-xs hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800';
+const btn = 'glass-btn px-2.5 py-1 text-xs';
 
 export function Toolbar() {
   const lesson = useLesson((s) => s.lesson)!;
@@ -69,7 +69,7 @@ export function Toolbar() {
         最初から
       </button>
       {checkOpen && step && step.type !== 'quiz' && (
-        <div className="absolute top-full right-0 z-40 mt-1 w-72 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="glass-strong absolute top-full right-0 z-40 mt-2 w-72 rounded-xl p-3 text-sm">
           <div className="mb-1 font-bold">今の課題の判定条件</div>
           <ul className="space-y-1">
             {results.map((r, i) => (

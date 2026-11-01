@@ -50,7 +50,7 @@ export function LessonPage({ id }: { id: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+      <header className="glass mx-2 mt-2 flex flex-wrap items-center gap-2 rounded-2xl px-4 py-2 lg:mx-3 lg:mt-3">
         <a href={href.home()} className="text-sm font-bold">
           Git Training
         </a>
@@ -59,7 +59,7 @@ export function LessonPage({ id }: { id: string }) {
           <Toolbar />
         </div>
       </header>
-      <nav className="flex border-b border-slate-200 text-sm lg:hidden dark:border-slate-800">
+      <nav className="glass mx-2 mt-2 flex rounded-xl text-sm lg:hidden">
         {(
           [
             ['task', '課題'],
@@ -72,27 +72,27 @@ export function LessonPage({ id }: { id: string }) {
           </button>
         ))}
       </nav>
-      <div className="flex min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(320px,400px)_1fr]">
-        <div className={`${pane('task')} min-h-0 flex-1 flex-col border-r border-slate-200 lg:flex dark:border-slate-800`}>
+      <div className="flex min-h-0 flex-1 gap-3 p-2 lg:grid lg:grid-cols-[minmax(320px,400px)_1fr] lg:p-3">
+        <div className={`${pane('task')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
           <LessonPanel lesson={lesson} session={session} />
         </div>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:grid lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]">
-          <div className={`${pane('visual')} min-h-[180px] flex-1 flex-col bg-white lg:flex dark:bg-slate-950`}>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]">
+          <div className={`${pane('visual')} glass min-h-[180px] flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
             <Graph repo={repo} highlight={highlight} />
           </div>
-          <div className={`${pane('visual')} items-start gap-2 border-y border-amber-200 bg-amber-50 px-3 py-1.5 text-sm lg:flex dark:border-amber-900 dark:bg-amber-950/40`} aria-live="polite" data-testid="summary">
+          <div className={`${pane('visual')} items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-100/50 px-3 py-1.5 text-sm backdrop-blur-xl lg:flex dark:border-amber-400/20 dark:bg-amber-500/10`} aria-live="polite" data-testid="summary">
             <span className="shrink-0 font-bold text-amber-700 dark:text-amber-300">今何が起きた？</span>
             <span>{session.summary ?? 'コマンドを実行すると、ここに何が起きたかが表示されます。'}</span>
           </div>
-          <div className={`${pane('visual')} min-h-0 flex-1 flex-col lg:flex`}>
-            <div className="flex gap-1 border-b border-slate-200 px-2 pt-1 text-xs dark:border-slate-800">
+          <div className={`${pane('visual')} glass min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
+            <div className="flex gap-1 border-b border-white/40 px-2 pt-1.5 text-xs dark:border-white/10">
               {(
                 [
                   ['areas', '4エリア'],
                   ['editor', `エディタ${editing ? `：${editing}` : ''}`],
                 ] as const
               ).map(([v, label]) => (
-                <button key={v} type="button" onClick={() => setView(v)} className={`rounded-t px-3 py-1 ${view === v ? 'bg-slate-200 font-bold dark:bg-slate-800' : 'text-slate-500'}`}>
+                <button key={v} type="button" onClick={() => setView(v)} className={`rounded-t-lg px-3 py-1 ${view === v ? 'bg-white/70 font-bold dark:bg-white/10' : 'text-slate-500'}`}>
                   {label}
                 </button>
               ))}
@@ -117,7 +117,7 @@ export function LessonPage({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <div className={`${pane('terminal')} min-h-0 flex-1 flex-col lg:flex`}>
+          <div className={`${pane('terminal')} glass-dark min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
             <div className="min-h-0 flex-1">
               <Terminal repo={repo} />
             </div>

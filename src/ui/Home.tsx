@@ -11,19 +11,19 @@ function Settings() {
   const importJson = useProgress((s) => s.importJson);
   const file = useRef<HTMLInputElement>(null);
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
+    <section className="glass rounded-2xl p-4 text-sm">
       <h2 className="mb-2 font-bold">設定</h2>
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2">
           テーマ
-          <select value={settings.theme} onChange={(e) => setSettings({ theme: e.target.value as 'light' | 'dark' })} className="rounded border border-slate-300 bg-transparent px-1 dark:border-slate-700">
+          <select value={settings.theme} onChange={(e) => setSettings({ theme: e.target.value as 'light' | 'dark' })} className="glass-input py-0.5">
             <option value="light">ライト</option>
             <option value="dark">ダーク</option>
           </select>
         </label>
         <label className="flex items-center gap-2">
           アニメーション
-          <select value={settings.animationSpeed} onChange={(e) => setSettings({ animationSpeed: Number(e.target.value) })} className="rounded border border-slate-300 bg-transparent px-1 dark:border-slate-700">
+          <select value={settings.animationSpeed} onChange={(e) => setSettings({ animationSpeed: Number(e.target.value) })} className="glass-input py-0.5">
             <option value={0}>停止</option>
             <option value={0.5}>ゆっくり</option>
             <option value={1}>ふつう</option>
@@ -32,7 +32,7 @@ function Settings() {
         </label>
         <button
           type="button"
-          className="rounded border border-slate-300 px-2 py-1 dark:border-slate-700"
+          className="glass-btn px-2 py-1"
           onClick={() => {
             const url = URL.createObjectURL(new Blob([exportJson()], { type: 'application/json' }));
             const a = Object.assign(document.createElement('a'), { href: url, download: `git-training-progress-${new Date().toISOString().slice(0, 10)}.json` });
@@ -42,7 +42,7 @@ function Settings() {
         >
           進捗をエクスポート
         </button>
-        <button type="button" className="rounded border border-slate-300 px-2 py-1 dark:border-slate-700" onClick={() => file.current?.click()}>
+        <button type="button" className="glass-btn px-2 py-1" onClick={() => file.current?.click()}>
           インポート
         </button>
         <input
@@ -82,9 +82,9 @@ export function Home() {
         <p className="text-sm text-slate-500">Git と GitHub の操作を、動く図で見ながら身につける</p>
       </header>
 
-      <section className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="flex flex-wrap items-center gap-4 rounded-xl border border-white/60 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
         {target && (
-          <a href={href.lesson(target)} className="rounded-lg bg-sky-600 px-5 py-3 font-bold text-white shadow hover:bg-sky-700" data-testid="resume">
+          <a href={href.lesson(target)} className="rounded-xl bg-gradient-to-r from-sky-500 to-violet-500 px-5 py-3 font-bold text-white shadow-lg shadow-sky-500/30 transition hover:brightness-110" data-testid="resume">
             {resume ? '続きから再開' : doneCount ? '次のレッスンへ' : 'はじめる'} → {lessons[target].title}
           </a>
         )}
@@ -124,7 +124,7 @@ export function Home() {
                 <div className="mt-1 font-bold">{c.title}</div>
                 <div className="mt-1 text-xs text-slate-500">{c.commands}</div>
                 {available && (
-                  <div className="mt-2 h-1.5 overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+                  <div className="mt-2 h-1.5 overflow-hidden rounded bg-white/50 dark:bg-white/10">
                     <div className="h-full bg-emerald-500" style={{ width: `${(p.done / p.total) * 100}%` }} />
                   </div>
                 )}
@@ -134,11 +134,11 @@ export function Home() {
             return (
               <li key={c.id}>
                 {available && unlocked ? (
-                  <a href={href.chapter(c.id)} className={`${cls} border-slate-200 bg-white hover:border-sky-500 dark:border-slate-800 dark:bg-slate-900`} data-testid={`chapter-${c.id}`}>
+                  <a href={href.chapter(c.id)} className={`${cls} glass hover:border-sky-400 hover:bg-white/60 dark:hover:bg-slate-900/60 transition`} data-testid={`chapter-${c.id}`}>
                     {body}
                   </a>
                 ) : (
-                  <div className={`${cls} border-dashed border-slate-300 opacity-60 dark:border-slate-700`}>{body}</div>
+                  <div className={`${cls} border-dashed border-white/60 bg-white/20 opacity-70 dark:border-white/10 dark:bg-white/5`}>{body}</div>
                 )}
               </li>
             );

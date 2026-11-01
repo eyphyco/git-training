@@ -13,7 +13,39 @@ body,
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200;
+  @apply text-slate-800 dark:text-slate-100;
+  background:
+    radial-gradient(40rem 30rem at 10% 0%, rgb(56 189 248 / 0.35), transparent 70%),
+    radial-gradient(36rem 28rem at 95% 15%, rgb(167 139 250 / 0.35), transparent 70%),
+    radial-gradient(44rem 32rem at 60% 105%, rgb(244 114 182 / 0.25), transparent 70%),
+    linear-gradient(160deg, #eef4ff 0%, #f5f0ff 50%, #fdf2f8 100%);
+  background-attachment: fixed;
+}
+.dark body {
+  background:
+    radial-gradient(40rem 30rem at 10% 0%, rgb(14 165 233 / 0.28), transparent 70%),
+    radial-gradient(36rem 28rem at 95% 15%, rgb(139 92 246 / 0.3), transparent 70%),
+    radial-gradient(44rem 32rem at 60% 105%, rgb(236 72 153 / 0.18), transparent 70%),
+    linear-gradient(160deg, #0b1023 0%, #120d2a 55%, #1a0f24 100%);
+  background-attachment: fixed;
+}
+
+/* ガラス風（すりガラスの半透明パネル）。背景のグラデーションがぼけて透ける */
+@utility glass {
+  @apply border border-white/50 bg-white/45 shadow-[0_8px_32px_rgb(31_38_135/0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/45 dark:shadow-[0_8px_32px_rgb(0_0_0/0.35)];
+}
+@utility glass-strong {
+  @apply border border-white/60 bg-white/75 shadow-[0_12px_40px_rgb(31_38_135/0.18)] backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/80;
+}
+@utility glass-btn {
+  @apply rounded-lg border border-white/60 bg-white/40 shadow-sm backdrop-blur-md transition hover:bg-white/75 disabled:opacity-40 disabled:hover:bg-white/40 dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/15;
+}
+@utility glass-input {
+  @apply rounded-lg border border-white/60 bg-white/50 px-2 outline-none backdrop-blur-md placeholder:text-slate-400 focus:border-sky-400 dark:border-white/15 dark:bg-white/5;
+}
+/* ターミナルは暗いガラス */
+@utility glass-dark {
+  @apply border border-white/10 bg-slate-950/80 backdrop-blur-xl;
 }
 
 /* 用語の点線下線（ホバー解説の目印） */
@@ -42,10 +74,10 @@ body {
   @apply list-decimal pl-5;
 }
 .prose-lesson code {
-  @apply rounded bg-slate-200 px-1 font-mono text-[0.85em] dark:bg-slate-800;
+  @apply rounded bg-slate-900/10 px-1 font-mono text-[0.85em] dark:bg-white/10;
 }
 .prose-lesson pre {
-  @apply overflow-x-auto rounded bg-slate-900 p-3 text-slate-100;
+  @apply overflow-x-auto rounded-lg bg-slate-950/80 p-3 text-slate-100;
 }
 .prose-lesson pre code {
   @apply bg-transparent p-0;
@@ -55,11 +87,11 @@ body {
 }
 .prose-lesson th,
 .prose-lesson td {
-  @apply border border-slate-300 px-2 py-1 text-left align-top dark:border-slate-700;
+  @apply border border-white/60 px-2 py-1 text-left align-top dark:border-white/10;
 }
 .prose-lesson th {
-  @apply bg-slate-100 dark:bg-slate-800;
+  @apply bg-white/50 dark:bg-white/5;
 }
 .prose-lesson blockquote {
-  @apply border-l-4 border-sky-400 bg-sky-50 px-3 py-1 dark:bg-sky-950/40;
+  @apply rounded-r-lg border-l-4 border-sky-400 bg-sky-100/50 px-3 py-1 dark:bg-sky-500/10;
 }

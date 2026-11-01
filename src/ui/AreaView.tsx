@@ -36,7 +36,7 @@ function Chip({ item, area, motionKind, onCommand, onOpenFile }: { item: FileIte
       transition={{ duration: d(0.5), ease: 'easeOut' }}
       className="group relative"
     >
-      <div className={`flex items-center gap-1 rounded-md border bg-white px-2 py-1 font-mono text-xs dark:bg-slate-900 ${info.cls} ${motionKind && changed ? 'ring-2 ring-amber-300' : ''}`}>
+      <div className={`flex items-center gap-1 rounded-lg border bg-white/60 px-2 py-1 font-mono text-xs backdrop-blur-md dark:bg-white/5 ${info.cls} ${motionKind && changed ? 'ring-2 ring-amber-300' : ''}`}>
         <Explain asChild content={<div><div className="mb-1 font-mono font-bold">{item.path}</div>{info.text}</div>}>
           <button
             type="button"
@@ -64,8 +64,8 @@ function Chip({ item, area, motionKind, onCommand, onOpenFile }: { item: FileIte
 
 function Column({ title, term, hint, children, dim }: { title: string; term?: string; hint: string; children: React.ReactNode; dim?: boolean }) {
   return (
-    <section className={`min-w-0 flex-1 flex-col rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60 ${dim ? 'hidden opacity-50 sm:flex' : 'flex'}`}>
-      <header className="border-b border-slate-200 px-2 py-1 text-xs font-bold dark:border-slate-800">
+    <section className={`min-w-0 flex-1 flex-col rounded-xl border border-white/50 bg-white/30 dark:border-white/10 dark:bg-white/5 ${dim ? 'hidden opacity-50 sm:flex' : 'flex'}`}>
+      <header className="border-b border-white/50 px-2 py-1 text-xs font-bold dark:border-white/10">
         {term ? <Term id={term}>{title}</Term> : title}
         <div className="truncate font-normal text-slate-500">{hint}</div>
       </header>

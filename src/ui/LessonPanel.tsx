@@ -21,7 +21,7 @@ function ExpectedGraph({ shape }: { shape: GraphShape }) {
     return world.local;
   }, [shape]);
   return (
-    <div className="mt-3 rounded-lg border border-dashed border-violet-400 bg-white p-2 dark:bg-slate-900">
+    <div className="mt-3 rounded-lg border border-dashed border-violet-400 bg-white/40 p-2 dark:bg-white/5">
       <div className="mb-1 text-xs font-bold text-violet-700 dark:text-violet-300">お手本</div>
       <div className="h-48">
         <Graph repo={repo} compact />
@@ -45,7 +45,7 @@ function TaskCard({ lesson, step }: { lesson: Lesson; step: TaskStep }) {
       {shape && shape.type === 'graphShape' && <ExpectedGraph shape={shape.expected} />}
       <ol className="mt-3 space-y-1.5">
         {hints.slice(0, shown).map((h, i) => (
-          <li key={i} className="rounded bg-amber-50 px-2 py-1 text-sm dark:bg-amber-950/40">
+          <li key={i} className="rounded bg-amber-100/60 px-2 py-1 text-sm dark:bg-amber-500/10">
             <span className="mr-1 font-bold text-amber-700 dark:text-amber-300">ヒント{i + 1}</span>
             <Markdown text={h} inline />
           </li>
@@ -59,13 +59,13 @@ function TaskCard({ lesson, step }: { lesson: Lesson; step: TaskStep }) {
               setShown(shown + 1);
               recordHint(lesson.id);
             }}
-            className="rounded border border-amber-400 px-2 py-1 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950"
+            className="rounded-lg border border-amber-400/70 bg-amber-50/40 px-2 py-1 text-amber-700 backdrop-blur-md hover:bg-amber-100/70 dark:bg-amber-500/10 dark:text-amber-300"
           >
             💡 ヒント{shown + 1}を見る（残り{hints.length - shown}）
           </button>
         )}
         {step.answer && (
-          <button type="button" onClick={() => setShowAnswer(!showAnswer)} className="rounded border border-slate-400 px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button type="button" onClick={() => setShowAnswer(!showAnswer)} className="glass-btn px-2 py-1">
             {showAnswer ? '答えを隠す' : '答えを見る'}
           </button>
         )}
@@ -73,7 +73,7 @@ function TaskCard({ lesson, step }: { lesson: Lesson; step: TaskStep }) {
       {showAnswer && step.answer && (
         <ul className="mt-2 space-y-1">
           {step.answer.map((a, i) => (
-            <li key={i} className="flex items-center gap-2 rounded bg-slate-900 px-2 py-1 font-mono text-xs text-slate-100">
+            <li key={i} className="flex items-center gap-2 rounded-lg bg-slate-950/80 px-2 py-1 font-mono text-xs text-slate-100">
               <span className="flex-1 break-all">{a}</span>
               <button type="button" onClick={() => setPending(a)} className="shrink-0 rounded bg-slate-700 px-1.5 py-0.5 font-sans text-[10px] hover:bg-slate-600">
                 入力欄へ
@@ -102,7 +102,7 @@ function QuizCard({ step, session }: { step: Extract<Lesson['steps'][number], { 
               type="button"
               disabled={wrong}
               onClick={() => answer(i)}
-              className={`rounded-lg border px-3 py-2 text-left text-sm ${wrong ? 'border-rose-300 bg-rose-50 text-rose-400 line-through dark:bg-rose-950/30' : 'border-slate-300 hover:border-sky-500 hover:bg-sky-50 dark:border-slate-700 dark:hover:bg-sky-950/40'}`}
+              className={`rounded-xl border px-3 py-2 text-left text-sm backdrop-blur-md transition ${wrong ? 'border-rose-300 bg-rose-50 text-rose-400 line-through dark:bg-rose-950/30' : 'border-white/60 bg-white/40 hover:border-sky-400 hover:bg-white/75 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/15'}`}
             >
               {String.fromCharCode(65 + i)}. {c}
             </button>
@@ -134,29 +134,29 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
         {lesson.title}
       </h1>
       {lesson.body && (
-        <details open={docOpen} onToggle={(e) => setDocOpen((e.target as HTMLDetailsElement).open)} className="mb-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <details open={docOpen} onToggle={(e) => setDocOpen((e.target as HTMLDetailsElement).open)} className="mb-3 rounded-lg border border-white/60 bg-white/40 p-3 dark:border-white/10 dark:bg-white/5">
           <summary className="cursor-pointer text-xs font-bold text-slate-500">解説</summary>
           <Markdown text={lesson.body} />
         </details>
       )}
       <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-        <div className="h-1.5 flex-1 overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+        <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/50 dark:bg-white/10">
           <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(done / Math.max(total, 1)) * 100}%` }} />
         </div>
         {Math.min(done + 1, total)}/{total}
       </div>
       {session.cleared && (
-        <div className="mb-3 rounded-lg border border-emerald-400 bg-emerald-50 p-3 text-sm dark:bg-emerald-950/40" data-testid="step-cleared">
+        <div className="mb-3 rounded-lg border border-emerald-400 bg-emerald-100/60 p-3 text-sm backdrop-blur-md dark:bg-emerald-500/10" data-testid="step-cleared">
           <div className="font-bold text-emerald-700 dark:text-emerald-300">✓ クリア！</div>
           {session.cleared.explain && <Markdown text={session.cleared.explain} inline />}
         </div>
       )}
       {session.done ? (
-        <div className="rounded-lg border-2 border-emerald-500 bg-white p-4 text-center dark:bg-slate-900" data-testid="lesson-done">
+        <div className="rounded-lg border-2 border-emerald-400/80 bg-white/55 p-4 text-center dark:bg-white/5" data-testid="lesson-done">
           <div className="text-2xl">🎉</div>
           <div className="mt-1 font-bold">{lesson.challenge ? '章末チャレンジ クリア！次の章が解放されました' : 'レッスン完了！'}</div>
           <div className="mt-3 flex justify-center gap-2 text-sm">
-            <button type="button" onClick={restart} className="rounded border border-slate-400 px-3 py-1">
+            <button type="button" onClick={restart} className="glass-btn px-3 py-1">
               もう一度
             </button>
             {next ? (
@@ -171,7 +171,7 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
           </div>
         </div>
       ) : step ? (
-        <div className="rounded-lg border-2 border-sky-400 bg-white p-3 dark:bg-slate-900" data-testid="current-step">
+        <div className="rounded-lg border-2 border-sky-400/70 bg-white/55 p-3 shadow-lg shadow-sky-500/10 dark:bg-white/5" data-testid="current-step">
           <div className="mb-1 text-xs font-bold text-sky-700 dark:text-sky-300">{step.type === 'quiz' ? '理解度クイズ' : `課題 ${done + 1}`}</div>
           {step.type === 'quiz' ? <QuizCard key={session.stepIndex} step={step} session={session} /> : <TaskCard key={session.stepIndex} lesson={lesson} step={step} />}
         </div>

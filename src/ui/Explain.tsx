@@ -28,10 +28,10 @@ export function Explain({ content, children, side = 'top', asChild }: Props) {
           side={side}
           sideOffset={6}
           collisionPadding={8}
-          className="z-50 max-w-xs rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          className="glass-strong z-50 max-w-xs rounded-xl p-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
         >
           {content}
-          <HoverCard.Arrow className="fill-white dark:fill-slate-900" />
+          <HoverCard.Arrow className="fill-white/75 dark:fill-slate-900/80" />
         </HoverCard.Content>
       </HoverCard.Portal>
     </HoverCard.Root>

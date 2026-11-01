@@ -63,31 +63,31 @@ export default function Editor({ repo, path, onSelect, onSave }: Props) {
   return (
     <div className="flex h-full min-h-0">
       <style>{`.conflict-ours{background:rgba(34,197,94,.18)}.conflict-theirs{background:rgba(59,130,246,.18)}.conflict-marker{background:rgba(234,88,12,.3)}`}</style>
-      <aside className="flex w-40 shrink-0 flex-col border-r border-slate-200 text-xs dark:border-slate-800">
+      <aside className="flex w-40 shrink-0 flex-col border-r border-white/40 text-xs dark:border-white/10">
         <ul className="flex-1 overflow-y-auto">
           {files.map((f) => (
             <li key={f}>
-              <button type="button" onClick={() => onSelect(f)} className={`block w-full truncate px-2 py-1 text-left font-mono ${f === path ? 'bg-sky-100 font-bold dark:bg-sky-900' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              <button type="button" onClick={() => onSelect(f)} className={`block w-full truncate px-2 py-1 text-left font-mono ${f === path ? 'bg-white/70 font-bold dark:bg-white/15' : 'hover:bg-white/40 dark:hover:bg-white/10'}`}>
                 {f}
               </button>
             </li>
           ))}
         </ul>
         <form
-          className="flex gap-1 border-t border-slate-200 p-1 dark:border-slate-800"
+          className="flex gap-1 border-t border-white/40 p-1 dark:border-white/10"
           onSubmit={(e) => {
             e.preventDefault();
             create();
           }}
         >
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新しいファイル名" className="min-w-0 flex-1 rounded border border-slate-300 bg-transparent px-1 dark:border-slate-700" />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新しいファイル名" className="min-w-0 flex-1 glass-input py-0.5" />
           <button type="submit" className="rounded bg-slate-700 px-1.5 text-white">＋</button>
         </form>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         {path !== null && saved !== undefined ? (
           <>
-            <div className="flex items-center gap-2 border-b border-slate-200 px-2 py-1 text-xs dark:border-slate-800">
+            <div className="flex items-center gap-2 border-b border-white/40 px-2 py-1 text-xs dark:border-white/10">
               <span className="font-mono font-bold">{path}</span>
               {dirty && <span className="text-amber-600">● 未保存</span>}
               <span className="ml-auto" />
@@ -103,7 +103,7 @@ export default function Editor({ repo, path, onSelect, onSave }: Props) {
                 path={path}
                 value={draft}
                 language={languageOf(path)}
-                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+                theme={theme === 'dark' ? 'glass-dark' : 'glass-light'}
                 onChange={(v) => setDraft(v ?? '')}
                 onMount={(ed) => {
                   editorRef.current = ed;
