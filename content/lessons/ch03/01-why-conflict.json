@@ -1,0 +1,45 @@
+{
+  "id": "ch03-01",
+  "title": "コンフリクトが起きる仕組み",
+  "level": "intermediate",
+  "doc": "01-why-conflict.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "greeting.txt": "Hello\nWelcome to our shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "make greeting polite", "files": { "greeting.txt": "Good morning\nWelcome to our shop\n" } },
+      { "id": "c3", "parent": "c1", "msg": "translate greeting", "files": { "greeting.txt": "こんにちは\nWelcome to our shop\n" } }
+    ],
+    "branches": { "main": "c2", "feature/ja": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "main と feature/ja が、greeting.txt の **同じ1行目** をそれぞれ書き換えています。feature/ja を main にマージしてみよう。",
+      "hints": ["今いるのは main です", "git merge feature/ja"],
+      "answer": ["git merge feature/ja"],
+      "check": [{ "type": "fileStatus", "path": "greeting.txt", "status": "conflicted" }],
+      "explain": "「CONFLICT (content)」と出て、マージが途中で止まりました。エリアビューの greeting.txt がオレンジ（コンフリクト中）になっています。"
+    },
+    {
+      "instruction": "cat greeting.txt で、ファイルの中身を見てみよう。",
+      "hints": ["cat はファイルの中身を表示します", "cat greeting.txt"],
+      "answer": ["cat greeting.txt"],
+      "check": [{ "type": "commandUsed", "command": "cat greeting.txt" }],
+      "explain": "<<<<<<< HEAD から ======= までが今いるブランチ（main）、======= から >>>>>>> feature/ja までが取り込もうとしたブランチの内容です。"
+    },
+    {
+      "type": "quiz",
+      "question": "`<<<<<<< HEAD` と `=======` の間に書かれているのは？",
+      "choices": ["マージしようとしたブランチ（feature/ja）の内容", "今いるブランチ（main）の内容", "共通の祖先（init）の内容"],
+      "answer": 1,
+      "explain": "HEAD = 今いるブランチ側です。2行目はどちらも変えていないので、自動でそのまま残っています。"
+    },
+    {
+      "instruction": "git status で、Git が今どういう状態だと言っているか確かめよう。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "explain": "「You have unmerged paths.」＝マージ途中。直して add → commit するか、git merge --abort でやめるかの2択です（次のレッスン）。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "merge", "branch", "switch", "add", "commit"]
+}

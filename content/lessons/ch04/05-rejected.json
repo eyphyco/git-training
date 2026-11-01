@@ -1,0 +1,49 @@
+{
+  "id": "ch04-05",
+  "title": "push rejected への対処",
+  "level": "intermediate",
+  "doc": "05-rejected.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "instruction": "login.html を作ってコミットしよう（メッセージ「add login」）。",
+      "hints": ["echo \"<form>login</form>\" > login.html → add → commit"],
+      "answer": ["echo \"<form>login</form>\" > login.html", "git add login.html", "git commit -m \"add login\""],
+      "check": [{ "type": "aheadBehind", "branch": "main", "ahead": 1, "behind": 0 }]
+    },
+    {
+      "before": [{ "type": "teammatePush", "id": "t1", "author": "Tanaka", "message": "add signup", "files": { "signup.html": "<form>signup</form>\n" } }],
+      "instruction": "あなたが push する直前に、Tanaka さんが先に push しました。気づかずに git push してみよう。",
+      "hints": ["git push"],
+      "answer": ["git push"],
+      "expectError": true,
+      "check": [{ "type": "commandUsed", "command": "git push" }],
+      "explain": "「! [rejected] (fetch first)」で拒否されました。リモートに知らないコミットがあるので、上書きしないよう Git が止めてくれたのです。"
+    },
+    {
+      "instruction": "git pull で Tanaka さんの変更を取り込もう。",
+      "hints": ["git pull"],
+      "answer": ["git pull"],
+      "check": [{ "type": "hasMergeCommit", "ref": "main" }, { "type": "fileContent", "path": "signup.html" }]
+    },
+    {
+      "instruction": "もう一度 git push しよう。",
+      "hints": ["git push"],
+      "answer": ["git push"],
+      "check": [{ "type": "remoteEquals", "ref": "main" }, { "type": "commandNotUsed", "command": "git push --force" }, { "type": "commandNotUsed", "command": "git push -f" }],
+      "explain": "今度は成功。リモートには Tanaka さんとあなたの両方のコミットが残っています。"
+    },
+    {
+      "type": "quiz",
+      "question": "rejected のとき git push --force で押し通すとどうなる？",
+      "choices": ["自動で両方の変更がマージされる", "リモートの Tanaka さんのコミットが消える（上書きされる）", "何も起きない"],
+      "answer": 1,
+      "explain": "--force はリモートの履歴を上書きします。共有ブランチでは原則禁止。rejected が出たら pull が正解です。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "merge", "fetch", "pull", "push", "remote"]
+}

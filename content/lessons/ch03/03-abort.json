@@ -1,0 +1,38 @@
+{
+  "id": "ch03-03",
+  "title": "merge --abort でやめる",
+  "level": "intermediate",
+  "doc": "03-abort.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "app.js": "const version = 1;\n", "config.json": "{ \"debug\": false }\n" } },
+      { "id": "c2", "parent": "c1", "msg": "bump version", "files": { "app.js": "const version = 2;\n", "config.json": "{ \"debug\": true }\n" } },
+      { "id": "c3", "parent": "c1", "msg": "experimental rewrite", "files": { "app.js": "const version = 'beta';\n", "config.json": "{ \"debug\": \"verbose\" }\n" } }
+    ],
+    "branches": { "main": "c2", "experiment": "c3" }
+  },
+  "steps": [
+    {
+      "instruction": "experiment を main にマージしてみよう。",
+      "hints": ["git merge experiment"],
+      "answer": ["git merge experiment"],
+      "check": [{ "type": "fileStatus", "path": "app.js", "status": "conflicted" }, { "type": "fileStatus", "path": "config.json", "status": "conflicted" }],
+      "explain": "2ファイルでコンフリクト。どう直すべきか、今は判断できない状況です。"
+    },
+    {
+      "instruction": "今回はマージをやめて、マージ前の状態に戻そう。",
+      "hints": ["merge にやめるためのオプションがあります", "git merge --abort"],
+      "answer": ["git merge --abort"],
+      "check": [{ "type": "statusClean" }, { "type": "refEquals", "ref": "main", "to": "c2" }, { "type": "fileContent", "path": "app.js", "equals": "const version = 2;\n" }],
+      "explain": "何もなかったかのように main の状態に戻りました。相手のブランチの作者と相談してから、改めてマージすればよいのです。"
+    },
+    {
+      "type": "quiz",
+      "question": "コンフリクトを起きにくくするコツとして、最も効果があるのは？",
+      "choices": ["ブランチをできるだけ長く育ててから一度にマージする", "小さな単位でこまめにマージ（pull）し、同じファイルを同時に大きく書き換えない", "コンフリクトが起きたら必ず相手の変更を採用する"],
+      "answer": 1,
+      "explain": "ブランチの寿命が長いほど差が広がり、コンフリクトが増えます。第7章のブランチ戦略でも重要なポイントです。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "merge", "add", "commit", "restore"]
+}

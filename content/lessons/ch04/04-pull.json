@@ -1,0 +1,37 @@
+{
+  "id": "ch04-04",
+  "title": "pull で取り込む",
+  "level": "intermediate",
+  "doc": "04-pull.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n", "style.css": "body { margin: 0; }\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "before": [{ "type": "teammatePush", "id": "t1", "author": "Suzuki", "message": "set font", "files": { "style.css": "body { margin: 0; font-family: sans-serif; }\n" } }],
+      "instruction": "Suzuki さんが style.css を更新して push しました。git pull で一気に取り込もう。",
+      "hints": ["git pull = git fetch + git merge", "git pull"],
+      "answer": ["git pull"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "t1" }, { "type": "fileContent", "path": "style.css", "contains": "sans-serif" }],
+      "explain": "fetch（origin/main 更新）と merge（main を進める）が続けて行われました。"
+    },
+    {
+      "type": "quiz",
+      "question": "git pull を1つのコマンドで書き直すと？",
+      "choices": ["git fetch のみ", "git fetch してから git merge origin/main", "git push してから git merge"],
+      "answer": 1,
+      "explain": "pull = fetch + merge。中身を確認してから取り込みたいときは、fetch と merge を分けて実行します。"
+    },
+    {
+      "before": [{ "type": "teammatePush", "id": "t2", "author": "Suzuki", "message": "add news", "files": { "news.html": "<h2>News</h2>\n" } }],
+      "instruction": "あなたも README.md を更新してコミットしてから、また Suzuki さんの push が来ました。コミットしてから git pull しよう（今度は両方に新しいコミットがある状態です）。",
+      "hints": ["echo \"説明文\" >> README.md → git commit -am \"update readme\"", "git pull"],
+      "answer": ["echo \"チームで作るアプリです\" >> README.md", "git commit -am \"update readme\"", "git pull"],
+      "check": [{ "type": "hasMergeCommit", "ref": "main" }, { "type": "fileContent", "path": "news.html" }, { "type": "aheadBehind", "branch": "main", "ahead": 2, "behind": 0 }],
+      "explain": "分岐していたので、pull でマージコミットができました。手元は origin/main より2つ（自分のコミット＋マージコミット）進んでいます。次は push の出番です。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "merge", "fetch", "pull", "remote"]
+}

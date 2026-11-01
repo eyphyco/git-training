@@ -1,0 +1,30 @@
+{
+  "id": "ch04-challenge",
+  "title": "章末チャレンジ：他人の push を取り込んでから push",
+  "level": "intermediate",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n", "todo.txt": "- design\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "before": [{ "type": "teammatePush", "id": "t1", "author": "Sato", "message": "add api client", "files": { "api.js": "export const api = {};\n" } }],
+      "instruction": "あなたのタスク：cart.js（中身は自由）を追加するコミットを作り、GitHub の main に届けること。\nただし Sato さんが先に push しています。Sato さんのコミットを消さず、--force も使わずに完了させよう。",
+      "hints": ["まずはいつもどおり add → commit", "push が拒否されたら何をする？", "git pull → git push"],
+      "answer": ["echo \"export const cart = [];\" > cart.js", "git add cart.js", "git commit -m \"add cart\"", "git pull", "git push"],
+      "check": [
+        { "type": "remoteEquals", "ref": "main" },
+        { "type": "fileContent", "path": "cart.js", "area": "head" },
+        { "type": "fileContent", "path": "api.js", "area": "head" },
+        { "type": "aheadBehind", "branch": "main", "ahead": 0, "behind": 0 },
+        { "type": "commandNotUsed", "command": "git push --force" },
+        { "type": "commandNotUsed", "command": "git push -f" }
+      ],
+      "explain": "クリア！ これでチーム開発の基本サイクル（pull → commit → pull → push）が回せるようになりました。章末の実機演習で、本物の GitHub でもやってみましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "restore", "branch", "switch", "merge", "fetch", "pull", "push", "remote"]
+}

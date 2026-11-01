@@ -1,0 +1,32 @@
+{
+  "id": "ch04-practice",
+  "title": "実機演習：SSH 鍵を設定して本物の GitHub に push",
+  "level": "intermediate",
+  "practice": true,
+  "doc": "practice.md",
+  "setup": { "initialized": false },
+  "steps": [
+    {
+      "type": "checklist",
+      "instruction": "自分の PC のターミナル（WSL など）で、SSH 鍵を作って GitHub に登録しよう。",
+      "items": [
+        "ssh-keygen -t ed25519 -C \"<GitHub の noreply アドレス>\" で鍵を作った（パスフレーズを設定）",
+        "cat ~/.ssh/id_ed25519.pub の中身（公開鍵）を GitHub の Settings → SSH and GPG keys に登録した",
+        "ssh -T git@github.com で「Hi <ユーザー名>! You've successfully authenticated」と表示された"
+      ],
+      "explain": "これで GitHub とパスワードなしで安全にやりとりできます。秘密鍵（.pub が付かない方）は絶対に人に渡さないこと。"
+    },
+    {
+      "type": "checklist",
+      "instruction": "GitHub に練習用リポジトリを作り、clone → commit → push しよう。",
+      "items": [
+        "GitHub で git-practice という public リポジトリを作った（README あり）",
+        "git clone git@github.com:<ユーザー名>/git-practice.git で clone した（SSH の URL）",
+        "git config user.email に GitHub の noreply アドレスを設定した（メールアドレスを公開しないため）",
+        "ファイルを追加して add → commit → git push した",
+        "GitHub の画面でコミットが表示されることを確認した"
+      ],
+      "explain": "お疲れさまでした！ シミュレータで練習した操作が、そのまま本物でも動きました。"
+    }
+  ]
+}

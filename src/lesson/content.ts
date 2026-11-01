@@ -14,14 +14,14 @@ for (const [path, lesson] of Object.entries(jsonFiles)) {
 }
 
 export function chapterOf(lessonId: string): Chapter | undefined {
-  return chapters.find((c) => c.lessons.includes(lessonId) || c.challenge === lessonId);
+  return chapters.find((c) => c.lessons.includes(lessonId) || c.challenge === lessonId || c.practice === lessonId);
 }
 
 /** 章内の順番（レッスン → 章末チャレンジ）で次のレッスン */
 export function nextLessonId(lessonId: string): string | null {
   const ch = chapterOf(lessonId);
   if (!ch) return null;
-  const order = [...ch.lessons, ...(ch.challenge ? [ch.challenge] : [])];
+  const order = [...ch.lessons, ...(ch.challenge ? [ch.challenge] : []), ...(ch.practice ? [ch.practice] : [])];
   const i = order.indexOf(lessonId);
   if (i >= 0 && i < order.length - 1) return order[i + 1];
   const nextCh = chapters[chapters.indexOf(ch) + 1];

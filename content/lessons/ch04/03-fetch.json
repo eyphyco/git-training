@@ -1,0 +1,42 @@
+{
+  "id": "ch04-03",
+  "title": "fetch でリモートの変更を確認する",
+  "level": "intermediate",
+  "doc": "03-fetch.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "steps": [
+    {
+      "before": [{ "type": "teammatePush", "id": "t1", "author": "Sato", "message": "add footer", "files": { "footer.html": "<footer>Team</footer>\n" } }],
+      "instruction": "同僚の Sato さんが GitHub に push しました（リモート列を見てください）。まず git status を実行しよう。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "explain": "「up to date」と出ます。手元は GitHub に問い合わせていないので、Sato さんの push をまだ知らないのです。"
+    },
+    {
+      "instruction": "git fetch でリモートの最新状態を取得しよう。",
+      "hints": ["git fetch"],
+      "answer": ["git fetch"],
+      "check": [{ "type": "aheadBehind", "branch": "main", "ahead": 0, "behind": 1 }],
+      "explain": "origin/main だけが進み、main とワークツリーは変わっていません。fetch は「見に行くだけ」で、作業中のファイルには触れない安全な操作です。"
+    },
+    {
+      "instruction": "git log --oneline origin/main で、Sato さんのコミットを確認しよう。",
+      "hints": ["log にブランチ名を渡すとそのブランチの履歴が見られます", "git log --oneline origin/main"],
+      "answer": ["git log --oneline origin/main"],
+      "check": [{ "type": "commandUsed", "command": "git log" }]
+    },
+    {
+      "instruction": "内容に問題がなければ git merge origin/main で取り込もう。",
+      "hints": ["origin/main もブランチと同じようにマージできます", "git merge origin/main"],
+      "answer": ["git merge origin/main"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "t1" }, { "type": "fileContent", "path": "footer.html" }],
+      "explain": "fast-forward で main が origin/main に追いつきました。fetch → 確認 → merge の流れを1コマンドでやるのが、次の git pull です。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "branch", "switch", "merge", "fetch", "remote"]
+}

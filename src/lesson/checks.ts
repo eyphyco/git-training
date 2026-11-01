@@ -2,6 +2,7 @@
 import { getBlob, getCommit, hashBlob, commitFiles } from '../engine/model/objects';
 import { ancestors, currentBranch, headOid, resolveRev } from '../engine/model/refs';
 import { computeStatus } from '../engine/model/status';
+import { aheadBehind, upstreamOf } from '../engine/remote';
 import type { Oid, World } from '../engine/model/types';
 import type { Check, GraphShape } from './types';
 
@@ -83,6 +84,7 @@ export function evaluate(check: Check, ctx: CheckContext): CheckResult {
       const where = { worktree: 'ワークツリー', index: 'ステージ', head: '最新コミット' }[area];
       if (check.exists === false) return { ok: content === undefined, label: `${where}に ${check.path} がない` };
       if (content === undefined) return { ok: false, label: `${where}に ${check.path} がある` };
+      if (check.notContains !== undefined) return { ok: !content.includes(check.notContains), label: `${where}の ${check.path} に「${check.notContains}」が残っていない` };
       if (check.equals !== undefined) return { ok: content === check.equals, label: `${where}の ${check.path} の内容が正しい` };
       if (check.contains !== undefined) return { ok: content.includes(check.contains), label: `${where}の ${check.path} に「${check.contains}」が含まれる` };
       return { ok: true, label: `${where}に ${check.path} がある` };
@@ -132,7 +134,20 @@ export function evaluate(check: Check, ctx: CheckContext): CheckResult {
       return { ok: ctx.commands.some((c) => commandMatches(c, check.command)), label: `${check.command} を実行した` };
     case 'commandNotUsed':
       return { ok: !ctx.commands.some((c) => commandMatches(c, check.command)), label: `${check.command} を使っていない` };
-    case 'remoteEquals':
+    case 'remoteEquals': {
+      const remoteName = check.remote ?? 'origin';
+      const remote = ctx.world.remotes[remoteName];
+      const want = check.to ? resolve(ctx, check.to) : repo.refs.heads[check.ref];
+      return { ok: !!remote && !!want && remote.refs.heads[check.ref] === want, label: check.to ? `${remoteName} の ${check.ref} が ${check.to} を指している` : `${remoteName} の ${check.ref} が手元の ${check.ref} と同じ（push 済み）` };
+    }
+    case 'aheadBehind': {
+      const branch = check.branch ?? currentBranch(repo);
+      const up = upstreamOf(repo, branch);
+      const local = branch ? repo.refs.heads[branch] : null;
+      const theirs = up ? repo.refs.remotes[up.remote]?.[up.branch] : null;
+      const ab = local && theirs ? aheadBehind(repo, local, theirs) : null;
+      return { ok: !!ab && ab.ahead === check.ahead && ab.behind === check.behind, label: `${branch} が追跡先より ${check.ahead} 進み、${check.behind} 遅れている` };
+    }
     case 'prState':
       return { ok: false, label: `${check.type} はフェーズ2以降で対応予定` };
   }
