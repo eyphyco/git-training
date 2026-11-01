@@ -11,6 +11,7 @@ import { FreePlayPage } from './FreePlayPage';
 import { Home } from './Home';
 import { LessonPage } from './LessonPage';
 import { href, useRoute } from './router';
+import { UpdateBanner } from './UpdateBanner';
 
 export function App() {
   const route = useRoute();
@@ -50,5 +51,10 @@ export function App() {
       );
   } else page = <Home />;
 
-  return <MotionConfig reducedMotion={settings.animationSpeed === 0 ? 'always' : 'never'}>{page}</MotionConfig>;
+  return (
+    <MotionConfig reducedMotion={settings.animationSpeed === 0 ? 'always' : 'never'}>
+      {page}
+      <UpdateBanner />
+    </MotionConfig>
+  );
 }
