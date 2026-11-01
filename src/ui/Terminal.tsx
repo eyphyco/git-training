@@ -5,6 +5,7 @@ import { short } from '../engine/model/objects';
 import type { RepoState, Tone } from '../engine/model/types';
 import { useLesson } from '../store/lesson';
 import { complete } from './completion';
+import { cwdOf } from '../engine/worktrees';
 import { DANGER_LABEL, lookupCommand } from './glossary';
 
 const TONE: Record<Tone, string> = {
@@ -19,10 +20,11 @@ const TONE: Record<Tone, string> = {
 };
 
 export function promptFor(repo: RepoState): string {
-  if (!repo.initialized) return 'you@git-training:~/project$';
+  const dir = cwdOf(repo).replace(/^\/home\/you/, '~');
+  if (!repo.initialized) return `you@git-training:${dir}$`;
   const b = currentBranch(repo);
   const where = b ?? (repo.head.type === 'detached' ? short(repo.head.oid) + '…' : '');
-  return `you@git-training:~/project (${where})$`;
+  return `you@git-training:${dir} (${where})$`;
 }
 
 export function Terminal({ repo }: { repo: RepoState }) {

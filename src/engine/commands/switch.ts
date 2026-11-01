@@ -4,11 +4,13 @@ import { currentBranch, headOid, isValidBranchName, logRef, resolveRev } from '.
 import type { Oid } from '../model/types';
 import { checkoutTree } from '../worktree';
 import { setUpstream } from '../remote';
+import { failIfUsedElsewhere } from '../worktrees';
 
 const headLabel = (ctx: Ctx) => currentBranch(ctx.repo) ?? short(headOid(ctx.repo)!);
 
 /** HEAD をブランチ（または detached でコミット）に切り替える。switch と checkout の共通処理 */
 export function moveHead(ctx: Ctx, target: { branch: string } | { detach: Oid }) {
+  if ('branch' in target) failIfUsedElsewhere(ctx.repo, target.branch);
   if (ctx.repo.inProgress?.op === 'rebase') fail('fatal: cannot switch branch while rebasing\nConsider "git rebase --quit" or "git worktree add".', 'rebase の途中です。git rebase --continue で終わらせるか、--abort で中止してから切り替えます。');
   const repo = ctx.repo;
   const fromLabel = headLabel(ctx);

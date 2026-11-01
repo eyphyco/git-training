@@ -1,5 +1,6 @@
 // git 以外の最小限のシェルコマンド（ファイルの作成・確認用）。
 import { fail, type Ctx } from './command';
+import { cwdOf, enterWorktree, resolvePath } from './worktrees';
 
 export type ShellDef = { name: string; run(ctx: Ctx, args: string[]): void };
 
@@ -90,7 +91,16 @@ export const SHELL: Record<string, ShellDef> = {
       ctx.hint('このシミュレータではファイルを作るとフォルダも自動で作られます（Git は空のフォルダを管理しないため、mkdir は省略しています）。');
     },
   },
-  pwd: { name: 'pwd', run: (ctx) => ctx.out('/home/you/project') },
-  cd: { name: 'cd', run: (ctx) => ctx.hint('このシミュレータではプロジェクトフォルダ（/home/you/project）から移動できません。') },
+  pwd: { name: 'pwd', run: (ctx) => ctx.out(cwdOf(ctx.repo)) },
+  cd: {
+    name: 'cd',
+    run(ctx, args) {
+      if (!args[0]) fail('cd: 移動先を指定してください', 'git worktree list に出る作業フォルダの間を cd で移動できます。');
+      const path = resolvePath(cwdOf(ctx.repo), args[0]);
+      if (path === cwdOf(ctx.repo)) return;
+      if (!ctx.repo.worktrees?.others[path]) fail(`cd: ${args[0]}: No such file or directory`, 'このシミュレータでは、プロジェクトフォルダと git worktree で作った作業フォルダの間だけ移動できます。');
+      enterWorktree(ctx.repo, path);
+    },
+  },
   clear: { name: 'clear', run: (ctx) => ctx.emit({ type: 'CLEAR' }) },
 };

@@ -25,6 +25,7 @@ import { show } from './commands/show';
 import { stash } from './commands/stash';
 import { status } from './commands/status';
 import { tag } from './commands/tag';
+import { worktree } from './commands/worktree';
 import { switchCmd } from './commands/switch';
 
 export const GIT_COMMANDS: Record<string, CommandDef> = {
@@ -54,11 +55,11 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   tag,
   stash,
   reflog,
+  worktree,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
   bisect: '第8章',
-  worktree: '第8章',
   mv: '今後',
 };
