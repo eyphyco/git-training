@@ -1,6 +1,6 @@
 // blob / tree / commit を実 Git と同じバイト列にして SHA-1 を取る（第8章の内部構造学習でもそのまま使う）。
 import { sha1 } from './sha1';
-import type { Commit, Oid, Path, RepoState, Signature, Tree, TreeEntry } from './types';
+import type { Commit, Oid, Path, RepoState, Signature, Tag, Tree, TreeEntry } from './types';
 
 const enc = new TextEncoder();
 
@@ -108,6 +108,23 @@ export function writeCommit(repo: RepoState, c: Omit<Commit, 'type'>): Oid {
   const oid = hashObject('commit', enc.encode(serializeCommit(commit)));
   if (!repo.objects[oid]) repo.objects[oid] = commit;
   return oid;
+}
+
+export function serializeTag(t: Tag): string {
+  return `object ${t.object}\ntype ${t.objectType}\ntag ${t.tag}\ntagger ${sig(t.tagger)}\n\n${t.message}\n`;
+}
+
+export function writeTag(repo: RepoState, t: Omit<Tag, 'type'>): Oid {
+  const tag: Tag = { type: 'tag', ...t };
+  const oid = hashObject('tag', enc.encode(serializeTag(tag)));
+  if (!repo.objects[oid]) repo.objects[oid] = tag;
+  return oid;
+}
+
+/** 注釈付きタグならその指すコミットへたどる */
+export function peel(repo: RepoState, oid: Oid): Oid {
+  const o = repo.objects[oid];
+  return o?.type === 'tag' ? peel(repo, o.object) : oid;
 }
 
 export function getCommit(repo: RepoState, oid: Oid): Commit {

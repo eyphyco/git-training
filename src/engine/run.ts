@@ -1,7 +1,7 @@
 // 入力1行を実行する入口。(world, line) => { world, output, events } の純粋関数。
 import { produce, type Draft } from 'immer';
 import { Fail, NOT_A_REPO, type Ctx } from './command';
-import { OptionError, parseArgs, tokenize, type ParsedArgs } from './parser';
+import { OptionError, parseArgs, tokenize, type ParsedArgs, type Redirect } from './parser';
 import { GIT_COMMANDS, PLANNED } from './registry';
 import { SHELL } from './shell';
 import type { CommandResult, GitEvent, OutputLine, World } from './model/types';
@@ -92,29 +92,37 @@ export function execute(world: World, line: string, options: RunOptions = {}): C
     return failed(world, [err(`${cmd}: command not found`), hint('git で始まるコマンドか、ls / cat / echo などが使えます（help で一覧）。')]);
   }
 
+  return runInDraft(world, runFn, { args, raw: rest, redirect, writeRedirect: cmd !== 'echo' });
+}
+
+type DraftOptions = { args?: ParsedArgs; raw?: string[]; redirect?: Redirect; writeRedirect?: boolean };
+
+/** World を Immer の draft にしてコマンド本体を走らせる。Fail は失敗出力に変える（エディタ保存など、コマンド以外の入口でも使う） */
+export function runInDraft(world: World, fn: (ctx: Ctx) => void, o: DraftOptions = {}): CommandResult {
   const output: OutputLine[] = [];
   const events: GitEvent[] = [];
+  const { redirect } = o;
   try {
     const next = produce(world, (draft: Draft<World>) => {
       const ctx: Ctx = {
         world: draft,
         repo: draft.local,
-        args,
-        raw: rest,
+        args: o.args ?? { opts: {}, positional: [], afterDashDash: null },
+        raw: o.raw ?? [],
         redirect,
         out: (text, tone = 'normal') => output.push({ text, tone }),
         hint: (text) => output.push({ text, tone: 'hint' }),
         emit: (e) => events.push(e),
         tick: () => (draft.clock += 60),
       };
-      runFn(ctx);
+      fn(ctx);
       // echo 以外のリダイレクト（git log > log.txt など）は通常出力をファイルに書く
-      if (redirect && cmd !== 'echo') {
-        const text = output.filter((o) => o.tone !== 'hint').map((o) => `${o.text}\n`).join('');
+      if (redirect && o.writeRedirect) {
+        const text = output.filter((x) => x.tone !== 'hint').map((x) => `${x.text}\n`).join('');
         const p = redirect.path.replace(/^\.\//, '');
         const created = !(p in draft.local.workingTree);
         draft.local.workingTree[p] = redirect.op === '>>' ? (draft.local.workingTree[p] ?? '') + text : text;
-        output.splice(0, output.length, ...output.filter((o) => o.tone === 'hint'));
+        output.splice(0, output.length, ...output.filter((x) => x.tone === 'hint'));
         events.push({ type: 'FILE_WRITTEN', path: p, created });
       }
     });

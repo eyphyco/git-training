@@ -14,6 +14,7 @@ import { merge } from './commands/merge';
 import { pull } from './commands/pull';
 import { push } from './commands/push';
 import { remote } from './commands/remote';
+import { reset } from './commands/reset';
 import { restore } from './commands/restore';
 import { rm } from './commands/rm';
 import { status } from './commands/status';
@@ -38,12 +39,12 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   fetch,
   pull,
   push,
+  reset,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
   revert: '第6章',
-  reset: '第6章',
   stash: '第6章',
   'cherry-pick': '第6章',
   rebase: '第6章',

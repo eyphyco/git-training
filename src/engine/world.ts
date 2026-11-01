@@ -109,6 +109,20 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
     }
 
     const head = setup.head ?? 'main';
+    // 今のブランチに至るコミットを順に作ったものとして reflog を入れておく（git reflog / HEAD@{n} 用）
+    const headTip = head.startsWith('detached:') ? aliases[head.slice(9)] : repo.refs.heads[head];
+    const chain = new Set<Oid>();
+    for (let o: Oid | undefined = headTip; o; o = getCommit(repo, o).parents[0]) chain.add(o);
+    let prev: Oid | null = null;
+    for (const c of setup.commits ?? []) {
+      const oid = aliases[c.id];
+      if (!chain.has(oid)) continue;
+      const commit = getCommit(repo, oid);
+      const msg = `${prev ? (commit.parents.length > 1 ? 'commit (merge)' : 'commit') : 'commit (initial)'}: ${c.msg.split('\n')[0]}`;
+      repo.reflog.push({ ref: 'HEAD', old: prev, new: oid, message: msg, time: commit.committer.time });
+      if (!head.startsWith('detached:')) repo.reflog.push({ ref: `refs/heads/${head}`, old: prev, new: oid, message: msg, time: commit.committer.time });
+      prev = oid;
+    }
     if (head.startsWith('detached:')) repo.head = { type: 'detached', oid: aliases[head.slice(9)] };
     else repo.head = { type: 'symbolic', ref: head };
     const headCommit = repo.head.type === 'detached' ? repo.head.oid : repo.refs.heads[repo.head.ref];

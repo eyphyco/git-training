@@ -2,27 +2,43 @@ import { fail, unsupported, type CommandDef, type Ctx } from '../command';
 import { commitFiles, short, subject, writeBlob, writeCommit, writeTree } from '../model/objects';
 import { currentBranch, headOid, logRef, setBranch } from '../model/refs';
 import { computeStatus } from '../model/status';
-import type { Oid } from '../model/types';
+import type { Oid, Signature } from '../model/types';
 import { printSummary, treeDiffStat } from '../stat';
+
+export type HeadCommit = { tree: Oid; parents: Oid[]; message: string; time: number; author?: Signature; reflog: string };
+
+export function you(ctx: Ctx, time: number): Signature {
+  return { ...ctx.repo.config.user, time, tz: '+0900' };
+}
+
+/** HEAD（ブランチにいればそのブランチ）を動かし、reflog を残す */
+export function moveHead(ctx: Ctx, oid: Oid, reflog: string) {
+  const repo = ctx.repo;
+  const branch = currentBranch(repo);
+  if (branch) setBranch(repo, branch, oid, reflog, ctx.world.clock);
+  else {
+    const old = headOid(repo);
+    repo.head = { type: 'detached', oid };
+    logRef(repo, 'HEAD', old, oid, reflog, ctx.world.clock);
+  }
+}
+
+/** コミットオブジェクトを書いて HEAD を進める。author を省くと自分（committer と同じ） */
+export function writeHeadCommit(ctx: Ctx, c: HeadCommit): Oid {
+  const repo = ctx.repo;
+  const committer = you(ctx, c.time);
+  const oid = writeCommit(repo, { tree: c.tree, parents: c.parents, author: c.author ?? committer, committer, message: c.message });
+  const branch = currentBranch(repo);
+  const old = headOid(repo);
+  moveHead(ctx, oid, `${c.reflog}: ${subject(c.message)}`);
+  ctx.emit({ type: 'COMMIT_CREATED', oid, parents: c.parents, branch, message: c.message });
+  ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: old, to: oid, reason: 'commit' });
+  return oid;
+}
 
 /** インデックスの内容でコミットを作り、HEAD（またはそのブランチ）を進める */
 export function commitIndex(ctx: Ctx, message: string, parents: Oid[], reflogMsg: string): Oid {
-  const repo = ctx.repo;
-  const tree = writeTree(repo, { ...repo.index });
-  const time = ctx.tick();
-  const who = { ...repo.config.user, time, tz: '+0900' };
-  const oid = writeCommit(repo, { tree, parents, author: who, committer: who, message });
-  const branch = currentBranch(repo);
-  const old = headOid(repo);
-  const msg = `${reflogMsg}: ${subject(message)}`;
-  if (branch) setBranch(repo, branch, oid, msg, time);
-  else {
-    repo.head = { type: 'detached', oid };
-    logRef(repo, 'HEAD', old, oid, msg, time);
-  }
-  ctx.emit({ type: 'COMMIT_CREATED', oid, parents, branch, message });
-  ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: old, to: oid, reason: 'commit' });
-  return oid;
+  return writeHeadCommit(ctx, { tree: writeTree(ctx.repo, { ...ctx.repo.index }), parents, message, time: ctx.tick(), reflog: reflogMsg });
 }
 
 export function cleanupMessage(parts: string[]): string {

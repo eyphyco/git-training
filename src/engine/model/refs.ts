@@ -1,5 +1,5 @@
 // ref の解決と移動、コミットグラフの探索。
-import { getCommit } from './objects';
+import { getCommit, peel } from './objects';
 import type { Oid, RepoState } from './types';
 
 export function currentBranch(repo: RepoState): string | null {
@@ -14,9 +14,9 @@ function resolveName(repo: RepoState, name: string): Oid | null {
   if (name === 'HEAD' || name === '@') return headOid(repo);
   const n = name.replace(/^refs\//, '');
   if (n.startsWith('heads/') && repo.refs.heads[n.slice(6)]) return repo.refs.heads[n.slice(6)];
-  if (n.startsWith('tags/') && repo.refs.tags[n.slice(5)]) return repo.refs.tags[n.slice(5)];
+  if (n.startsWith('tags/') && repo.refs.tags[n.slice(5)]) return peel(repo, repo.refs.tags[n.slice(5)]);
   if (repo.refs.heads[n]) return repo.refs.heads[n];
-  if (repo.refs.tags[n]) return repo.refs.tags[n];
+  if (repo.refs.tags[n]) return peel(repo, repo.refs.tags[n]);
   const remotePath = n.startsWith('remotes/') ? n.slice(8) : n;
   const slash = remotePath.indexOf('/');
   if (slash > 0) {
@@ -31,13 +31,34 @@ function resolveName(repo: RepoState, name: string): Oid | null {
   return null;
 }
 
-/** "main", "HEAD~2", "abc1234^2" などをコミット ID に解決する。解決できなければ null */
+/** reflog の参照名（HEAD / refs/heads/main / refs/stash） */
+export function reflogRef(repo: RepoState, name: string): string | null {
+  if (!name || name === 'HEAD' || name === '@') return 'HEAD';
+  if (name === 'stash' || name === 'refs/stash') return 'refs/stash';
+  const n = name.replace(/^refs\/heads\//, '');
+  return repo.refs.heads[n] !== undefined ? `refs/heads/${n}` : null;
+}
+
+/** ref の reflog を新しい順に返す */
+export function reflogOf(repo: RepoState, ref: string) {
+  return repo.reflog.filter((e) => e.ref === ref).reverse();
+}
+
+/** "HEAD@{2}" "main@{1}" "stash@{0}" を解決する */
+function resolveReflog(repo: RepoState, name: string, n: number): Oid | null {
+  if (name === 'stash' || name === 'refs/stash') return repo.stash[n]?.oid ?? null;
+  const ref = reflogRef(repo, name);
+  if (!ref) return null;
+  return reflogOf(repo, ref)[n]?.new ?? null;
+}
+
+/** "main", "HEAD~2", "abc1234^2", "HEAD@{1}" などをコミット ID に解決する。解決できなければ null */
 export function resolveRev(repo: RepoState, rev: string): Oid | null {
-  const m = rev.match(/^(.*?)((?:[~^]\d*)*)$/);
+  const m = rev.match(/^(.*?)(?:@\{(\d+)\})?((?:[~^]\d*)*)$/);
   if (!m) return null;
-  let oid = resolveName(repo, m[1] || 'HEAD');
+  let oid = m[2] !== undefined ? resolveReflog(repo, m[1], Number(m[2])) : resolveName(repo, m[1] || 'HEAD');
   if (!oid) return null;
-  const ops = m[2].match(/[~^]\d*/g) ?? [];
+  const ops = m[3].match(/[~^]\d*/g) ?? [];
   for (const op of ops) {
     const n = op.length > 1 ? Number(op.slice(1)) : 1;
     if (op[0] === '~') {
