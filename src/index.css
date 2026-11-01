@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200;
+}
+
+/* 用語の点線下線（ホバー解説の目印） */
+.term {
+  @apply cursor-help underline decoration-dotted decoration-sky-500 underline-offset-4;
+}
+
+.prose-lesson h1 {
+  @apply mb-3 text-lg font-bold;
+}
+.prose-lesson h2 {
+  @apply mt-4 mb-2 font-bold;
+}
+.prose-lesson p,
+.prose-lesson ul,
+.prose-lesson ol,
+.prose-lesson table,
+.prose-lesson pre,
+.prose-lesson blockquote {
+  @apply my-2 text-sm leading-relaxed;
+}
+.prose-lesson ul {
+  @apply list-disc pl-5;
+}
+.prose-lesson ol {
+  @apply list-decimal pl-5;
+}
+.prose-lesson code {
+  @apply rounded bg-slate-200 px-1 font-mono text-[0.85em] dark:bg-slate-800;
+}
+.prose-lesson pre {
+  @apply overflow-x-auto rounded bg-slate-900 p-3 text-slate-100;
+}
+.prose-lesson pre code {
+  @apply bg-transparent p-0;
+}
+.prose-lesson table {
+  @apply w-full border-collapse;
+}
+.prose-lesson th,
+.prose-lesson td {
+  @apply border border-slate-300 px-2 py-1 text-left align-top dark:border-slate-700;
+}
+.prose-lesson th {
+  @apply bg-slate-100 dark:bg-slate-800;
+}
+.prose-lesson blockquote {
+  @apply border-l-4 border-sky-400 bg-sky-50 px-3 py-1 dark:bg-sky-950/40;
+}

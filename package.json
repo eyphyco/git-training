@@ -16,7 +16,6 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-hover-card": "^1.2.1",
-    "@radix-ui/react-tabs": "^1.2.1",
     "idb-keyval": "^6.3.0",
     "immer": "^11.2.9",
     "monaco-editor": "^0.57.0",
@@ -25,6 +24,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.16"
   },
   "devDependencies": {
