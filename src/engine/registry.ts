@@ -1,6 +1,7 @@
 // コマンド登録表。新しいコマンドはここに1行足すだけで使えるようになる（設計書 §8 保守性）。
 import type { CommandDef } from './command';
 import { add } from './commands/add';
+import { bisect } from './commands/bisect';
 import { branch } from './commands/branch';
 import { checkout } from './commands/checkout';
 import { cherryPick } from './commands/cherry-pick';
@@ -56,10 +57,10 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   stash,
   reflog,
   worktree,
+  bisect,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
-  bisect: '第8章',
   mv: '今後',
 };
