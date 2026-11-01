@@ -14,6 +14,7 @@ import { log } from './commands/log';
 import { merge } from './commands/merge';
 import { pull } from './commands/pull';
 import { push } from './commands/push';
+import { rebase } from './commands/rebase';
 import { remote } from './commands/remote';
 import { reset } from './commands/reset';
 import { restore } from './commands/restore';
@@ -46,6 +47,7 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   reset,
   revert,
   'cherry-pick': cherryPick,
+  rebase,
   show,
   tag,
 };
@@ -53,7 +55,6 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
   stash: '第6章',
-  rebase: '第6章',
   reflog: '第6章',
   bisect: '第8章',
   worktree: '第8章',

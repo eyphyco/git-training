@@ -348,7 +348,7 @@ function parseTodo(ctx: Ctx, text: string): TodoItem[] {
   const items: TodoItem[] = [];
   text.split('\n').forEach((raw, i) => {
     const line = raw.trim();
-    if (!line || line.startsWith('#')) return;
+    if (!line || line.startsWith('#') || line === 'noop') return;
     const [word, hash] = line.split(/\s+/);
     const action = ACTIONS[word];
     if (!action) fail(`error: invalid line ${i + 1}: ${line}`, `「${word}」はこのサイトでは使えない指示です。pick / reword / edit / squash / fixup / drop のどれかにしてください。`);
