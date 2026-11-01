@@ -9,7 +9,7 @@ export type LessonId = string;
 export type Resume = { lessonId: LessonId; stepIndex: number; world: World; commands: string[]; undo: World[] };
 
 export type Progress = {
-  lessons: Record<LessonId, { status: 'todo' | 'doing' | 'done'; hintsUsed: number; clearedAt?: string }>;
+  lessons: Record<LessonId, { status: 'todo' | 'doing' | 'done'; hintsUsed: number; clearedAt?: string; /** 実戦シナリオの最高点 */ score?: number }>;
   snapshots: Record<string, World>;
   studyLog: Record<string, number>;
   settings: { theme: 'light' | 'dark'; animationSpeed: number; /** 学習のゴール日（YYYY-MM-DD）。未設定なら最初の学習日の30日後 */ goalDate?: string; /** 実行プレビュー（入力中にグラフの変化を予告）を出すか。既定は出す */ preview?: boolean };
@@ -29,7 +29,7 @@ type Store = Progress & {
   loaded: boolean;
   load(): Promise<void>;
   startLesson(id: LessonId): void;
-  completeLesson(id: LessonId): void;
+  completeLesson(id: LessonId, score?: number): void;
   recordHint(id: LessonId): void;
   saveResume(r: Resume | undefined): void;
   saveSnapshot(name: string, world: World): void;
@@ -75,11 +75,12 @@ export const useProgress = create<Store>((setState, getState) => {
     startLesson(id) {
       update((s) => (s.lessons[id] ? {} : { lessons: { ...s.lessons, [id]: { status: 'doing', hintsUsed: 0 } } }));
     },
-    completeLesson(id) {
+    completeLesson(id, score) {
       update((s) => {
         const prev = s.lessons[id] ?? { status: 'todo', hintsUsed: 0 };
-        if (prev.status === 'done') return {};
-        return { lessons: { ...s.lessons, [id]: { ...prev, status: 'done', clearedAt: new Date().toISOString() } } };
+        const best = score === undefined ? prev.score : Math.max(score, prev.score ?? 0);
+        if (prev.status === 'done') return best === prev.score ? {} : { lessons: { ...s.lessons, [id]: { ...prev, score: best } } };
+        return { lessons: { ...s.lessons, [id]: { ...prev, status: 'done', clearedAt: new Date().toISOString(), ...(best !== undefined ? { score: best } : {}) } } };
       });
     },
     recordHint(id) {

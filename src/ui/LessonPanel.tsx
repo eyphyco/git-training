@@ -2,13 +2,15 @@
 import { useMemo, useState } from 'react';
 import { createWorld } from '../engine/world';
 import { nextLessonId, chapterOf } from '../lesson/content';
-import type { Session } from '../lesson/session';
+import { scoreOf, type Session } from '../lesson/session';
 import type { ChecklistStep, GraphShape, Lesson, TaskStep } from '../lesson/types';
 import { useLesson } from '../store/lesson';
 import { useProgress } from '../store/progress';
 import { Graph } from './graph/Graph';
 import { Markdown } from './Markdown';
 import { href } from './router';
+import { StrategyRules } from './StrategyRules';
+import { TeamChat } from './TeamChat';
 
 function ExpectedGraph({ shape }: { shape: GraphShape }) {
   const repo = useMemo(() => {
@@ -145,6 +147,22 @@ function QuizCard({ step, session }: { step: Extract<Lesson['steps'][number], { 
   );
 }
 
+function ScoreCard({ session, lessonId }: { session: Session; lessonId: string }) {
+  const hints = useProgress((s) => s.lessons[lessonId]?.hintsUsed ?? 0);
+  const { score, items } = scoreOf(session, hints);
+  return (
+    <div className="mt-2" data-testid="score">
+      <div className="text-3xl font-extrabold">
+        {score}
+        <span className="text-sm font-bold"> 点</span>
+      </div>
+      <ul className="text-xs text-[var(--muted)]">
+        {items.length ? items.map((i) => <li key={i.label}>{i.label}（{i.points}）</li>) : <li>減点なし。完璧です！</li>}
+      </ul>
+    </div>
+  );
+}
+
 export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Session }) {
   const [docOpen, setDocOpen] = useState(true);
   const restart = useLesson((s) => s.restartLesson);
@@ -156,9 +174,15 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4">
       <div className="text-xs text-slate-500">
-        <a href={ch ? href.chapter(ch.id) : href.home()} className="hover:underline">
-          第{ch?.number}章 {ch?.title}
-        </a>
+        {lesson.scenario ? (
+          <a href={href.scenarios()} className="hover:underline">
+            実戦シナリオ
+          </a>
+        ) : (
+          <a href={ch ? href.chapter(ch.id) : href.home()} className="hover:underline">
+            第{ch?.number}章 {ch?.title}
+          </a>
+        )}
       </div>
       <h1 className="mt-1 mb-2 text-lg font-bold">
         {lesson.challenge && <span className="mr-2 rounded bg-violet-600 px-1.5 py-0.5 align-middle text-xs text-white">章末チャレンジ</span>}
@@ -170,6 +194,12 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
           <summary className="cursor-pointer text-xs font-bold text-slate-500">解説</summary>
           <Markdown text={lesson.body} />
         </details>
+      )}
+      {lesson.scenario && <TeamChat chat={session.chat} />}
+      {session.world.hosting.strategy && (
+        <div className="mb-3">
+          <StrategyRules world={session.world} compact />
+        </div>
       )}
       <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
         <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/50 dark:bg-white/10">
@@ -186,7 +216,8 @@ export function LessonPanel({ lesson, session }: { lesson: Lesson; session: Sess
       {session.done ? (
         <div className="rounded-lg border-2 border-emerald-400/80 bg-white/55 p-4 text-center dark:bg-white/5" data-testid="lesson-done">
           <div className="text-2xl">🎉</div>
-          <div className="mt-1 font-bold">{lesson.challenge ? '章末チャレンジ クリア！次の章が解放されました' : lesson.practice ? '実機演習 完了！' : 'レッスン完了！'}</div>
+          <div className="mt-1 font-bold">{lesson.scenario ? 'シナリオ クリア！' : lesson.challenge ? '章末チャレンジ クリア！次の章が解放されました' : lesson.practice ? '実機演習 完了！' : 'レッスン完了！'}</div>
+          {lesson.scenario && <ScoreCard session={session} lessonId={lesson.id} />}
           <div className="mt-3 flex justify-center gap-2 text-sm">
             <button type="button" onClick={restart} className="glass-btn px-3 py-1">
               もう一度

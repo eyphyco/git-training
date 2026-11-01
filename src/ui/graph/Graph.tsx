@@ -88,6 +88,8 @@ type Props = {
   compact?: boolean;
   /** 実行プレビュー（F-20）：repo は実行後の状態、base は今の状態 */
   previewBase?: RepoState;
+  /** コミットをクリックしたとき（内部構造ビューを開く） */
+  onSelect?(oid: Oid): void;
 };
 
 function reachable(repo: RepoState): Set<Oid> {
@@ -97,7 +99,7 @@ function reachable(repo: RepoState): Set<Oid> {
   return out;
 }
 
-export function Graph({ repo, highlight = [], compact, previewBase }: Props) {
+export function Graph({ repo, highlight = [], compact, previewBase, onSelect }: Props) {
   const { move, d } = useAnim();
   const layout: Layout | null = useMemo(() => {
     if (!repo.initialized) return null;
@@ -166,7 +168,8 @@ export function Graph({ repo, highlight = [], compact, previewBase }: Props) {
           return (
             <Explain key={n.oid} asChild side="bottom" content={<CommitCard repo={repo} oid={n.oid} />}>
               <motion.g
-                style={{ originX: `${nx(n.col)}px`, originY: `${ny(n.lane)}px`, cursor: 'help' }}
+                style={{ originX: `${nx(n.col)}px`, originY: `${ny(n.lane)}px`, cursor: onSelect ? 'pointer' : 'help' }}
+                onClick={onSelect ? () => onSelect(n.oid) : undefined}
                 initial={mounted.current ? { scale: 0, opacity: 0 } : false}
                 animate={{ scale: 1, opacity: added ? 0.55 : lost ? 0.22 : 1 }}
                 data-preview={added ? 'added' : lost ? 'lost' : undefined}

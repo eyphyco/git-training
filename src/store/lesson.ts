@@ -38,6 +38,8 @@ type Store = {
 
 /** フリープレイ（課題なし）は進捗に記録しない */
 export const FREEPLAY_ID = 'freeplay';
+/** 戦略シミュレータなど、進捗に記録しない作業場 */
+export const isSandbox = (id: string) => id === FREEPLAY_ID || id.startsWith('sandbox:');
 
 let nextId = 1;
 const line = (kind: TermLine['kind'], text: string, tone: OutputLine['tone'] = 'normal', prompt?: string): TermLine => ({ id: nextId++, kind, text, tone, prompt });
@@ -50,10 +52,10 @@ export const useLesson = create<Store>((set, get) => {
     const { lesson } = get();
     if (!lesson) return;
     set({ session: next });
-    if (lesson.id === FREEPLAY_ID) return;
+    if (isSandbox(lesson.id)) return;
     const progress = useProgress.getState();
     if (next.done) {
-      progress.completeLesson(lesson.id);
+      progress.completeLesson(lesson.id, lesson.scenario ? S.scoreOf(next, progress.lessons[lesson.id]?.hintsUsed ?? 0).score : undefined);
       progress.saveResume(undefined);
     } else {
       progress.saveResume({ lessonId: lesson.id, stepIndex: next.stepIndex, world: next.world, commands: next.commands, undo: next.undo.slice(-20) });
@@ -157,7 +159,7 @@ export const useLesson = create<Store>((set, get) => {
       const { lesson } = get();
       if (!lesson) return;
       // フリープレイの「最初から」でレッスンの再開データを消さない
-      if (lesson.id !== FREEPLAY_ID) useProgress.getState().saveResume(undefined);
+      if (!isSandbox(lesson.id)) useProgress.getState().saveResume(undefined);
       set({ session: S.startSession(lesson), lines: WELCOME(lesson) });
     },
     restore(world, name) {
