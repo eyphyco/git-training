@@ -1,6 +1,7 @@
 // コマンド登録表。新しいコマンドはここに1行足すだけで使えるようになる（設計書 §8 保守性）。
 import type { CommandDef } from './command';
 import { add } from './commands/add';
+import { bisect } from './commands/bisect';
 import { branch } from './commands/branch';
 import { checkout } from './commands/checkout';
 import { cherryPick } from './commands/cherry-pick';
@@ -12,6 +13,7 @@ import { fetch } from './commands/fetch';
 import { init } from './commands/init';
 import { log } from './commands/log';
 import { merge } from './commands/merge';
+import { catFile, lsTree, revParse } from './commands/plumbing';
 import { pull } from './commands/pull';
 import { push } from './commands/push';
 import { rebase } from './commands/rebase';
@@ -25,6 +27,7 @@ import { show } from './commands/show';
 import { stash } from './commands/stash';
 import { status } from './commands/status';
 import { tag } from './commands/tag';
+import { worktree } from './commands/worktree';
 import { switchCmd } from './commands/switch';
 
 export const GIT_COMMANDS: Record<string, CommandDef> = {
@@ -54,11 +57,14 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   tag,
   stash,
   reflog,
+  worktree,
+  bisect,
+  'cat-file': catFile,
+  'ls-tree': lsTree,
+  'rev-parse': revParse,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
-  bisect: '第8章',
-  worktree: '第8章',
   mv: '今後',
 };

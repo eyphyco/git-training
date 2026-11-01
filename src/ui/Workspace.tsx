@@ -8,6 +8,7 @@ import { previewOf } from './preview';
 import { AreaView } from './AreaView';
 import { Graph } from './graph/Graph';
 import { GuiButtons } from './GuiButtons';
+import { InternalsView } from './InternalsView';
 import { ReplayBar } from './ReplayBar';
 import { promptFor, Terminal } from './Terminal';
 
@@ -48,7 +49,8 @@ export function WorkspaceLayout({ tab, left, session, resetKey }: { tab: MobileT
 function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): string }) {
   const run = useLesson((s) => s.run);
   const save = useLesson((s) => s.save);
-  const [view, setView] = useState<'areas' | 'editor' | 'github'>('areas');
+  const [view, setView] = useState<'areas' | 'editor' | 'github' | 'internals'>('areas');
+  const [inspect, setInspect] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [replay, setReplay] = useState<number | null>(null);
 
@@ -92,7 +94,12 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
               👁 プレビュー：<code className="font-bold">{draft.trim()}</code> を Enter で実行するとこうなります（点線 = 新しくできるコミット、薄い × = どのブランチからも辿れなくなるコミット）
             </div>
           )}
-          <Graph repo={preview && !replaying ? preview.local : shown.local} previewBase={preview && !replaying ? session.world.local : undefined} highlight={replaying || preview ? [] : highlight} />
+          <Graph repo={preview && !replaying ? preview.local : shown.local} previewBase={preview && !replaying ? session.world.local : undefined} highlight={replaying || preview ? [] : highlight}
+            onSelect={(oid) => {
+              setInspect(oid);
+              setView('internals');
+            }}
+          />
           <label className="absolute right-3 bottom-1 z-10 flex items-center gap-1 text-[10px] text-slate-500">
             <input type="checkbox" checked={previewOn} onChange={(e) => setSettings({ preview: e.target.checked })} className="accent-violet-500" />
             実行プレビュー
@@ -110,6 +117,7 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
               ['areas', '4エリア'],
               ['editor', `エディタ${editing ? `：${editing.split('/').pop()}` : ''}${pending ? ' ✎' : ''}`],
               ...(hasGitHub ? ([['github', `GitHub${openPrs ? `（PR ${openPrs}）` : ''}`]] as const) : []),
+              ['internals', '内部構造'],
             ] as const
           ).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setView(v)} className={`rounded-t-lg px-3 py-1 ${view === v ? 'bg-white/70 font-bold dark:bg-white/10' : 'text-slate-500'}`}>
@@ -118,7 +126,9 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
           ))}
         </div>
         <div className="min-h-0 flex-1">
-          {view === 'github' && hasGitHub ? (
+          {view === 'internals' ? (
+            <InternalsView repo={shown.local} inspect={inspect} onInspect={setInspect} />
+          ) : view === 'github' && hasGitHub ? (
             <Suspense fallback={<div className="p-4 text-sm text-slate-500">読み込み中…</div>}>
               <GitHubView world={shown} readOnly={replaying} />
             </Suspense>

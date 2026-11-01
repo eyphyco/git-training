@@ -38,9 +38,11 @@ export function conflictRanges(text: string) {
 
 export default function Editor({ repo, pending, path, onSelect, onSave }: Props) {
   const theme = useProgress((s) => s.settings.theme);
-  const files = Object.keys(repo.workingTree).sort();
+  const hookFiles = Object.keys(repo.hooks ?? {}).map((n) => `.git/hooks/${n}`);
+  const files = [...Object.keys(repo.workingTree).sort(), ...hookFiles];
   const isPending = !!pending && path === pending.path;
-  const saved = path === null ? undefined : isPending ? pending!.text : repo.workingTree[path];
+  const isHook = path?.startsWith('.git/hooks/') ?? false;
+  const saved = path === null ? undefined : isPending ? pending!.text : isHook ? repo.hooks?.[path.slice(11)] : repo.workingTree[path];
   const [draft, setDraft] = useState(saved ?? '');
   const [newName, setNewName] = useState('');
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
@@ -69,7 +71,7 @@ export default function Editor({ repo, pending, path, onSelect, onSave }: Props)
   const create = () => {
     const name = newName.trim().replace(/^\.\//, '');
     if (!name) return;
-    if (!(name in repo.workingTree)) onSave(name, '');
+    if (name.startsWith('.git/hooks/') ? !(name.slice(11) in (repo.hooks ?? {})) : !(name in repo.workingTree)) onSave(name, name.startsWith('.git/hooks/') ? '#!/bin/sh\n' : '');
     onSelect(name);
     setNewName('');
   };
@@ -147,7 +149,7 @@ export default function Editor({ repo, pending, path, onSelect, onSave }: Props)
               <MonacoEditor
                 path={path}
                 value={draft}
-                language={isPending ? 'plaintext' : languageOf(path)}
+                language={isPending ? 'plaintext' : isHook ? 'shell' : languageOf(path)}
                 theme={theme === 'dark' ? 'glass-dark' : 'glass-light'}
                 onChange={(v) => setDraft(v ?? '')}
                 onMount={(ed) => {

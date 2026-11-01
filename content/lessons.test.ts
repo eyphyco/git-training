@@ -1,7 +1,7 @@
 // 全レッスンの模範解答を自動実行し、クリアできることを確かめる（設計書 §8）。
 import { describe, expect, it } from 'vitest';
 import { evaluateAll } from '../src/lesson/checks';
-import { chapters, lessons } from '../src/lesson/content';
+import { chapters, lessons, scenarios } from '../src/lesson/content';
 import { answerQuiz, checkStep, runAnswer, startSession, toggleCheck } from '../src/lesson/session';
 import glossary from './glossary.json';
 
@@ -9,7 +9,7 @@ const all = Object.values(lessons);
 
 describe('教材', () => {
   it('chapters.json のレッスンが全て存在し、どの章にも属さないレッスンがない', () => {
-    const listed = chapters.flatMap((c) => [...c.lessons, ...(c.challenge ? [c.challenge] : []), ...(c.practice ? [c.practice] : [])]);
+    const listed = [...chapters.flatMap((c) => [...c.lessons, ...(c.challenge ? [c.challenge] : []), ...(c.practice ? [c.practice] : [])]), ...scenarios.map((s) => s.id)];
     for (const id of listed) expect(lessons[id], id).toBeDefined();
     expect(all.map((l) => l.id).sort()).toEqual([...listed].sort());
   });

@@ -7,8 +7,9 @@ import { applyHostingEvent } from '../hosting/events';
 import { GH } from '../hosting/gh';
 import { teammatePush } from '../engine/remote';
 import { createWorld, editFile } from '../engine/world';
-import type { CommandResult, GitEvent, Oid, World } from '../engine/model/types';
-import { evaluateAll, type CheckResult } from './checks';
+import type { CommandResult, GitEvent, Oid, OutputLine, World } from '../engine/model/types';
+import { commandMatches, evaluateAll, type CheckResult } from './checks';
+import { findViolations } from './strategy';
 import type { AnswerStep, Lesson, Step, TaskStep } from './types';
 
 /** 操作の再生（F-22）用の1コマ */
@@ -37,7 +38,17 @@ export type Session = {
   done: boolean;
   /** イベントのたびに増える（アニメーションの起点に使う） */
   seq: number;
+  /** 実戦シナリオのチャット */
+  chat: ChatMessage[];
+  /** 起きたきっかけ（Trigger の id） */
+  fired: string[];
+  /** 直前の操作でターミナルに足す行（ルール違反の警告・チャットの通知） */
+  notices: OutputLine[];
+  /** Undo した回数（スコアに使う） */
+  undoCount: number;
 };
+
+export type ChatMessage = { from: string; text: string; seq: number };
 
 /** ステップの開始時の出来事（同僚の push、GitHub 上の PR・レビューなど）を起こす */
 function enterStep(lesson: Lesson, s: Session): Session {
@@ -86,8 +97,12 @@ export function startSession(lesson: Lesson): Session {
     checked: [],
     done: lesson.steps.length === 0,
     seq: 0,
+    chat: [],
+    fired: [],
+    notices: [],
+    undoCount: 0,
   };
-  return enterStep(lesson, s);
+  return enterStep(lesson, fireTriggers(lesson, s, null, []));
 }
 
 export function currentStep(lesson: Lesson, s: Session) {
@@ -115,6 +130,9 @@ function advance(lesson: Lesson, s: Session): Session {
 
 function applyChange(lesson: Lesson, s: Session, world: World, events: GitEvent[], label: string, command?: string): Session {
   const changed = world !== s.world;
+  // ブランチ戦略のルール違反（F-13）。World に積むので Undo で一緒に戻る
+  const violations = changed ? findViolations(s.world, world, events) : [];
+  if (violations.length) world = { ...world, hosting: { ...world.hosting, violations: [...(world.hosting.violations ?? []), ...violations] } };
   const next: Session = {
     ...s,
     world,
@@ -126,16 +144,82 @@ function applyChange(lesson: Lesson, s: Session, world: World, events: GitEvent[
     summary: explainEvents(events) ?? s.summary,
     cleared: null,
     seq: s.seq + 1,
+    notices: violations.map((v) => ({ text: `⚠️ ルール違反 ${v}`, tone: 'yellow' as const })),
   };
-  return advance(lesson, next);
+  return advance(lesson, fireTriggers(lesson, next, command ?? null, events));
+}
+
+/** 実戦シナリオのきっかけを調べて、条件を満たしたものを起こす（Bot の push・PR・チャット） */
+function fireTriggers(lesson: Lesson, s: Session, command: string | null, events: GitEvent[]): Session {
+  if (!lesson.triggers?.length) return s;
+  let cur = s;
+  for (let round = 0; round < 5; round++) {
+    const hit = lesson.triggers.find((t) => {
+      if (cur.fired.includes(t.id) || (t.after && !cur.fired.includes(t.after))) return false;
+      const w = t.when;
+      if (w.type === 'start') return true;
+      if (w.type === 'command') return !!command && commandMatches(command, w.match);
+      if (w.type === 'event') return events.some((e) => e.type === w.event);
+      return evaluateAll([w.check], { world: cur.world, aliases: cur.aliases, commands: cur.commands }).every((r) => r.ok);
+    });
+    if (!hit) break;
+    let world = cur.world;
+    const chat = [...cur.chat];
+    const notices = [...cur.notices];
+    const timeline = [...cur.timeline];
+    const aliases = { ...cur.aliases };
+    const summaries: string[] = [];
+    const evs: GitEvent[] = [...cur.lastEvents];
+    for (const a of hit.actions) {
+      if (a.type === 'message') {
+        chat.push({ from: a.from, text: a.text, seq: cur.seq });
+        notices.push({ text: `💬 ${a.from}: ${a.text}`, tone: 'cyan' });
+        continue;
+      }
+      if (a.type === 'teammatePush') {
+        const r = teammatePush(world, a);
+        world = r.world;
+        evs.push(...r.events);
+        if (a.id) aliases[a.id] = r.oid;
+        summaries.push(`${a.author} さんが ${a.branch ?? 'main'} に push しました（「${a.message}」）。`);
+      } else {
+        const r = applyHostingEvent(world, a);
+        world = r.world;
+        evs.push(...r.events);
+        summaries.push(r.summary);
+      }
+      timeline.push({ world, label: `（${a.author} さん）` });
+    }
+    // Bot が World を変えたら、その前の状態にも Undo で戻れるようにする
+    const undo = world !== cur.world ? [...cur.undo, cur.world] : cur.undo;
+    cur = { ...cur, world, chat, notices, timeline, aliases, undo, lastEvents: evs, fired: [...cur.fired, hit.id], summary: summaries.length ? summaries.join(' ') : cur.summary };
+  }
+  return cur;
+}
+
+/** 実戦シナリオのスコア（100 点から減点。時間は数えない） */
+export function scoreOf(s: Session, hintsUsed: number): { score: number; items: { label: string; points: number }[] } {
+  const force = s.commands.filter((c) => /^git push\b.*(\s(-f|--force|--force-with-lease)\b|\s\+)/.test(c)).length;
+  const violations = s.world.hosting.violations?.length ?? 0;
+  const items = [
+    { label: `ヒント ${hintsUsed} 回`, points: -5 * hintsUsed },
+    { label: `ルール違反 ${violations} 件`, points: -10 * violations },
+    { label: `force push ${force} 回`, points: -15 * force },
+    { label: `Undo ${s.undoCount} 回`, points: -2 * s.undoCount },
+  ].filter((i) => i.points);
+  return { score: Math.max(0, 100 + items.reduce((a, i) => a + i.points, 0)), items };
 }
 
 /** ターミナルで使える git 以外のコマンド（模擬 GitHub の gh） */
 export const PROGRAMS = { gh: GH };
 
+/** ルール違反の警告やチャットの通知を、ターミナルの出力の後ろに足す */
+const withNotices = (result: CommandResult, s: Session): CommandResult => (s.notices.length ? { ...result, output: [...result.output, ...s.notices] } : result);
+
 export function runCommand(lesson: Lesson, s: Session, line: string): { session: Session; result: CommandResult } {
   const result = execute(s.world, line, { allowedCommands: lesson.allowedCommands, programs: PROGRAMS });
-  return { session: applyChange(lesson, s, result.world, result.events, line.trim(), line.trim()), result };
+  const session = applyChange(lesson, s, result.world, result.events, line.trim(), line.trim());
+  return { session, result: withNotices(result, session) };
 }
 
 export function saveFile(lesson: Lesson, s: Session, path: string, content: string | null): Session {
@@ -149,14 +233,16 @@ export function saveEditorFile(lesson: Lesson, s: Session, path: string, content
   if (ed?.path !== path) return { session: saveFile(lesson, s, path, content), result: null };
   const result = saveEditor(s.world, path, content);
   if (!result.ok) return { session: s, result };
-  return { session: applyChange(lesson, s, result.world, result.events, `（エディタで ${path.split('/').pop()} を保存）`), result };
+  const session = applyChange(lesson, s, result.world, result.events, `（エディタで ${path.split('/').pop()} を保存）`);
+  return { session, result: withNotices(result, session) };
 }
 
 /** GitHub 画面のボタンなど、コマンド以外の操作（ctx を受け取ってエンジン・hosting の関数を呼ぶ） */
 export function runAction(lesson: Lesson, s: Session, label: string, fn: (ctx: Ctx) => void): { session: Session; result: CommandResult } {
   const result = runInDraft(s.world, fn);
   if (!result.ok) return { session: s, result };
-  return { session: applyChange(lesson, s, result.world, result.events, label), result };
+  const session = applyChange(lesson, s, result.world, result.events, label);
+  return { session, result: withNotices(result, session) };
 }
 
 /** 模範解答の1手を実行する（自動テストと「答えを見る」から使う） */
@@ -194,6 +280,7 @@ export function undo(s: Session): Session {
     world: s.undo[s.undo.length - 1],
     undo: s.undo.slice(0, -1),
     timeline: s.timeline.length > 1 ? s.timeline.slice(0, -1) : s.timeline,
+    undoCount: s.undoCount + 1,
     lastEvents: [],
     summary: '1つ前の状態に戻しました。',
     seq: s.seq + 1,

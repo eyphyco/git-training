@@ -1,0 +1,45 @@
+{
+  "id": "ch08-challenge",
+  "title": "章末チャレンジ：bisect でバグが入ったコミットを特定する",
+  "level": "advanced",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "calc.js": "add(a, b) = a + b\n", "test.sh": "grep -q 'a + b' calc.js\n", "README.md": "# Calc\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add docs", "files": { "docs.md": "usage\n" } },
+      { "id": "c3", "parent": "c2", "msg": "add sub", "files": { "sub.js": "sub(a, b) = a - b\n" } },
+      { "id": "c4", "parent": "c3", "msg": "update readme", "files": { "README.md": "# Calc\n\nSimple.\n" } },
+      { "id": "c5", "parent": "c4", "msg": "add mul", "files": { "mul.js": "mul(a, b) = a * b\n" } },
+      { "id": "c6", "parent": "c5", "msg": "refactor add", "files": { "calc.js": "add(a, b) = a - b\n" } },
+      { "id": "c7", "parent": "c6", "msg": "add div", "files": { "div.js": "div(a, b) = a / b\n" } },
+      { "id": "c8", "parent": "c7", "msg": "update docs", "files": { "docs.md": "usage v2\n" } },
+      { "id": "c9", "parent": "c8", "msg": "add pow", "files": { "pow.js": "pow(a, b) = a ** b\n" } },
+      { "id": "c10", "parent": "c9", "msg": "release prep", "files": { "VERSION": "1.0.0\n" } }
+    ],
+    "branches": { "main": "c10" }
+  },
+  "steps": [
+    {
+      "instruction": "足し算が引き算になってしまうバグがあります（test.sh が失敗する）。最初の init（HEAD~9）では正しく動いていました。`git bisect start <bad> <good>` で調査を始めよう。",
+      "hints": ["今（HEAD）が bad、HEAD~9 が good", "git bisect start HEAD HEAD~9"],
+      "answer": ["git bisect start HEAD HEAD~9"],
+      "check": [{ "type": "bisect", "state": "active" }]
+    },
+    {
+      "instruction": "バグが入ったコミットを特定しよう。手で `git bisect good / bad` を答えても、`git bisect run sh test.sh` で自動化してもOK（test.sh は正しければ 0 で終わる）。",
+      "hints": ["cat calc.js で a + b なら good、a - b なら bad", "git bisect run sh test.sh で自動で絞り込めます"],
+      "answer": ["git bisect run sh test.sh"],
+      "check": [{ "type": "bisect", "state": "found", "commit": "c6" }],
+      "explain": "「refactor add」がバグの原因でした。10個のコミットを、3〜4回の確認で特定できています。"
+    },
+    {
+      "instruction": "`git bisect reset` で元のブランチに戻り、原因のコミットを revert して直そう（`git revert --no-edit <ID>`。ID は bisect の出力の先頭）。",
+      "hints": ["git bisect reset", "原因のコミットは main~4（「refactor add」）", "git revert --no-edit main~4"],
+      "answer": ["git bisect reset", "git revert --no-edit main~4"],
+      "check": [{ "type": "bisect", "state": "none" }, { "type": "headOn", "branch": "main" }, { "type": "fileContent", "path": "calc.js", "area": "head", "contains": "a + b" }],
+      "explain": "クリア！ 全章修了です。最後は実機演習で、Claude Code と worktree を使った並列開発に挑戦しましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "bisect", "revert", "reset", "reflog", "branch", "switch"]
+}

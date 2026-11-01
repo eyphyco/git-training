@@ -1,3 +1,4 @@
+import { cwdOf, usedElsewhere } from '../worktrees';
 import { fail, type CommandDef } from '../command';
 import { getCommit, short, subject } from '../model/objects';
 import { currentBranch, headOid, isAncestor, isValidBranchName, logRef, resolveRev } from '../model/refs';
@@ -16,7 +17,9 @@ export const branch: CommandDef = {
       for (const name of positional) {
         const oid = repo.refs.heads[name];
         if (!oid) fail(`error: branch '${name}' not found`, `「${name}」というブランチはありません。git branch で一覧を確認しましょう。`);
-        if (name === cur) fail(`error: cannot delete branch '${name}' used by worktree at '/home/you/project'`, '今いるブランチは消せません。別のブランチに switch してから消します。');
+        if (name === cur) fail(`error: cannot delete branch '${name}' used by worktree at '${cwdOf(repo)}'`, '今いるブランチは消せません。別のブランチに switch してから消します。');
+        const elsewhere = usedElsewhere(repo, name);
+        if (elsewhere) fail(`error: cannot delete branch '${name}' used by worktree at '${elsewhere}'`, `${name} はほかの作業フォルダで使われています。git worktree remove してから消します。`);
         const head = headOid(repo);
         if (!opts['force-delete'] && (!head || !isAncestor(repo, oid, head)))
           fail(`error: the branch '${name}' is not fully merged\nhint: If you are sure you want to delete it, run 'git branch -D ${name}'`, 'まだマージされていないコミットがあるため消せません（消すとそのコミットに辿り着けなくなります）。');
@@ -96,6 +99,6 @@ export const branch: CommandDef = {
     }
     repo.refs.heads[name] = oid;
     logRef(repo, `refs/heads/${name}`, null, oid, `branch: Created from ${start ?? 'HEAD'}`, ctx.world.clock);
-    ctx.emit({ type: 'BRANCH_CREATED', name, oid });
+    ctx.emit({ type: 'BRANCH_CREATED', name, oid, from: start ?? currentBranch(repo) ?? undefined });
   },
 };

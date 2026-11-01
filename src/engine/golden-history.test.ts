@@ -77,3 +77,14 @@ describe.skipIf(!hasGit)('実 Git との比較（履歴操作）', () => {
     expect(two.sim).toEqual(two.real);
   });
 });
+
+describe.skipIf(!hasGit)('実 Git との比較（bisect）', () => {
+  it('bisect が選ぶコミットの順番', () => {
+    const steps = [{ write: { 'n.txt': '1\n' }, git: ['init', 'add .', 'commit -m c1'] }];
+    for (let i = 2; i <= 12; i++) steps.push({ write: { 'n.txt': `${i}\n` }, git: ['add .', `commit -m c${i}`] });
+    // c8 から bad として、各ステップで HEAD が実 Git と同じか（ブランチ名の代わりに HEAD を比べる）
+    const answers = ['bisect start HEAD HEAD~11'];
+    const { real, sim } = runBoth([...steps, { git: answers }], ['HEAD']);
+    expect(sim.HEAD ?? real.HEAD).toBe(real.HEAD);
+  });
+});

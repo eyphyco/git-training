@@ -25,6 +25,12 @@ export type Check =
   | { type: 'issueState'; number: number; state: 'open' | 'closed' }
   | { type: 'protection'; branch: string; requirePullRequest?: boolean; requiredApprovals?: number; requireStatusChecks?: boolean }
   | { type: 'stashCount'; count: number }
+  | { type: 'noViolations' }
+  | { type: 'remoteTag'; name: string; remote?: string }
+  | { type: 'hookExists'; name: string }
+  | { type: 'worktreeExists'; path: string; exists?: boolean }
+  | { type: 'bisect'; state: 'active' | 'none' | 'found'; commit?: string }
+  | { type: 'containsCommit'; ref: string; commit: string }
   | { type: 'inProgress'; op: 'merge' | 'rebase' | 'cherry-pick' | 'revert' | null }
   | { type: 'tagExists'; name: string; annotated?: boolean; at?: string };
 
@@ -73,6 +79,21 @@ export type ChecklistStep = {
 
 export type Step = TaskStep | QuizStep | ChecklistStep;
 
+/** 実戦シナリオ（F-14）：Bot が動くきっかけ */
+export type ScenarioWhen =
+  | { type: 'start' }
+  /** そのコマンド（前方一致）を実行したら */
+  | { type: 'command'; match: string }
+  /** そのイベント（COMMIT_CREATED、PUSHED、PR_OPENED など）が起きたら */
+  | { type: 'event'; event: string }
+  /** 判定条件を満たしたら */
+  | { type: 'check'; check: Check };
+
+export type ScenarioAction = { type: 'message'; from: string; text: string } | LessonEvent;
+
+/** 1回だけ起きる出来事。after を書くと、そのきっかけの後でだけ反応する */
+export type Trigger = { id: string; when: ScenarioWhen; after?: string; actions: ScenarioAction[] };
+
 export type Lesson = {
   id: string;
   title: string;
@@ -85,6 +106,9 @@ export type Lesson = {
   challenge?: boolean;
   /** 実機演習なら true */
   practice?: boolean;
+  /** 実戦シナリオ（チャットとスコアを表示する） */
+  scenario?: { summary: string; members: string[] };
+  triggers?: Trigger[];
   /** 実行環境（ブラウザ）で読み込んだ解説 Markdown */
   body?: string;
 };

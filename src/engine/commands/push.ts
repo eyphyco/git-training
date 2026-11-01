@@ -1,11 +1,13 @@
 import { fail, type CommandDef } from '../command';
 import { isAncestor, currentBranch, resolveRev } from '../model/refs';
+import { short } from '../model/objects';
 import type { RefUpdate } from '../model/types';
+import { runHook } from '../hooks';
 import { copyObjects, hostedRepo, refLine, remoteUrl, setUpstream, upstreamOf } from '../remote';
 
 export const push: CommandDef = {
   name: 'push',
-  spec: { short: { u: 'set-upstream', f: 'force', d: 'delete' }, long: ['force-with-lease', 'all'] },
+  spec: { short: { u: 'set-upstream', f: 'force', d: 'delete' }, long: ['force-with-lease', 'all', 'no-verify', 'tags'] },
   run(ctx) {
     const repo = ctx.repo;
     const { opts, positional } = ctx.args;
@@ -23,6 +25,32 @@ export const push: CommandDef = {
       spec = `${cur}:${up.branch}`;
     }
     const remote = hostedRepo(ctx, remoteName);
+    // タグの push（git push origin v1.0.0 / git push --tags）
+    const tagNames = opts.tags ? Object.keys(repo.refs.tags).sort() : spec && !repo.refs.heads[spec.replace(/^refs\/tags\//, '')] && repo.refs.tags[spec.replace(/^refs\/tags\//, '')] !== undefined ? [spec.replace(/^refs\/tags\//, '')] : [];
+    if (tagNames.length || opts.tags) {
+      const url = remoteUrl(repo, remoteName);
+      const lines: string[] = [];
+      let rejected = false;
+      for (const t of tagNames) {
+        const oid = repo.refs.tags[t];
+        const old = remote.refs.tags[t];
+        if (old === oid) continue;
+        if (old && !opts.force) {
+          lines.push(` ! [rejected]        ${t} -> ${t} (already exists)`);
+          rejected = true;
+          continue;
+        }
+        copyObjects(repo, remote, [oid]);
+        remote.refs.tags[t] = oid;
+        lines.push(old ? ` + ${short(old)}...${short(oid)} ${t} -> ${t} (forced update)` : ` * [new tag]         ${t} -> ${t}`);
+        ctx.emit({ type: 'PUSHED', remote: remoteName, updates: [{ ref: `refs/tags/${t}`, from: old ?? null, to: oid }] });
+      }
+      if (!lines.length) return ctx.out('Everything up-to-date');
+      ctx.out(`To ${url}`);
+      for (const l of lines) ctx.out(l, l.includes('rejected') ? 'red' : 'normal');
+      if (rejected) fail(`error: failed to push some refs to '${url}'`, '同じ名前のタグがリモートにあります。公開済みのタグは付け直さず、新しいバージョン番号を使うのが原則です。');
+      return;
+    }
     if (!spec) {
       if (!cur) fail('fatal: You are not currently on a branch.');
       spec = up && up.remote === remoteName ? `${cur}:${up.branch}` : cur;
@@ -32,6 +60,8 @@ export const push: CommandDef = {
     const url = remoteUrl(repo, remoteName);
     const updates: RefUpdate[] = [];
 
+    if (!opts['no-verify'] && !runHook(ctx, 'pre-push', [remoteName, url]))
+      fail(`error: failed to push some refs to '${url}'`, 'pre-push フックが 0 以外で終わったので、push を中止しました。');
     // GitHub のブランチ保護（hosting 層の設定。origin だけが対象）
     const protection = remoteName === 'origin' ? ctx.world.hosting.protections.find((p) => p.branch === (opts.delete ? src : dst)) : undefined;
     const rejectProtected = (reason: string, ja: string) => {

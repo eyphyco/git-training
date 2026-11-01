@@ -1,0 +1,55 @@
+{
+  "id": "ch07-challenge",
+  "title": "章末チャレンジ：リリースと緊急 hotfix を Git Flow で回す",
+  "level": "advanced",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# App\n", "VERSION": "0.9.0\n", "pay.js": "pay(amount)\n" } },
+      { "id": "d1", "parent": "c1", "msg": "Merge branch 'feature/coupon' into develop", "files": { "coupon.js": "coupon()\n" } }
+    ],
+    "branches": { "main": "c1", "develop": "d1" },
+    "head": "develop",
+    "hosting": { "strategy": "git-flow" }
+  },
+  "steps": [
+    {
+      "instruction": "v1.0.0 をリリースしよう：develop から release/1.0.0 を作って VERSION を 1.0.0 にコミット → main に --no-ff でマージ → 注釈付きタグ v1.0.0 → develop にもマージ。",
+      "hints": ["前のレッスン（Git Flow）の手順と同じです", "git switch -c release/1.0.0 → echo \"1.0.0\" > VERSION → git commit -am ...", "main にマージ・タグ、develop にマージ（どちらも --no-ff）"],
+      "answer": [
+        "git switch -c release/1.0.0",
+        "echo \"1.0.0\" > VERSION",
+        "git commit -am \"bump version to 1.0.0\"",
+        "git switch main",
+        "git merge --no-ff release/1.0.0 -m \"Release 1.0.0\"",
+        "git tag -a v1.0.0 -m \"1.0.0\"",
+        "git switch develop",
+        "git merge --no-ff release/1.0.0 -m \"Merge branch 'release/1.0.0' into develop\""
+      ],
+      "check": [{ "type": "tagExists", "name": "v1.0.0", "annotated": true }, { "type": "containsCommit", "ref": "develop", "commit": "release/1.0.0" }, { "type": "containsCommit", "ref": "main", "commit": "release/1.0.0" }, { "type": "noViolations" }]
+    },
+    {
+      "instruction": "リリース直後に支払いのバグ（pay.js が金額を2倍にしてしまう）が見つかりました。**hotfix/1.0.1** で直して v1.0.1 を出し、修正を develop にも入れよう。直し方は、pay.js の中身を `pay(amount) // fixed` に書き換えるだけで構いません。",
+      "hints": ["hotfix/ は main から作ります（git switch main → git switch -c hotfix/1.0.1）", "直してコミット → main に --no-ff でマージ → タグ v1.0.1", "最後に develop にも hotfix/1.0.1 をマージ"],
+      "answer": [
+        "git switch main",
+        "git switch -c hotfix/1.0.1",
+        "echo \"pay(amount) // fixed\" > pay.js",
+        "git commit -am \"fix double charge\"",
+        "git switch main",
+        "git merge --no-ff hotfix/1.0.1 -m \"Hotfix 1.0.1\"",
+        "git tag -a v1.0.1 -m \"1.0.1\"",
+        "git switch develop",
+        "git merge --no-ff hotfix/1.0.1 -m \"Merge branch 'hotfix/1.0.1' into develop\""
+      ],
+      "check": [
+        { "type": "tagExists", "name": "v1.0.1", "annotated": true, "at": "main" },
+        { "type": "containsCommit", "ref": "develop", "commit": "hotfix/1.0.1" },
+        { "type": "noViolations" }
+      ],
+      "explain": "クリア！ main には v1.0.0 と v1.0.1 のタグ、develop にはリリースと hotfix の両方が入りました。ルール違反もゼロです。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "merge", "tag", "show", "reset", "reflog"]
+}

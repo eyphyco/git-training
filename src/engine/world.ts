@@ -3,6 +3,7 @@ import { produce } from 'immer';
 import { getBlob, readTree, getCommit, writeBlob, writeCommit, writeTree } from './model/objects';
 import type { GitEvent, Hosting, Oid, Path, RepoState, World } from './model/types';
 import { copyObjects, DEFAULT_URL, emptyHosted } from './remote';
+import { HOOK_DIR } from './hooks';
 
 export const START_TIME = 1767225600; // 2026-01-01 00:00:00 UTC
 
@@ -168,6 +169,14 @@ export function createWorld(setup: Setup = {}): { world: World; aliases: Record<
 export function editFile(world: World, path: Path, content: string | null): { world: World; events: GitEvent[] } {
   const events: GitEvent[] = [];
   const next = produce(world, (w) => {
+    // .git/hooks/<名前> は hooks として保存する
+    if (path.startsWith(HOOK_DIR)) {
+      const name = path.slice(HOOK_DIR.length);
+      w.local.hooks ??= {};
+      if (content === null) delete w.local.hooks[name];
+      else w.local.hooks[name] = content;
+      return;
+    }
     if (content === null) {
       if (!(path in w.local.workingTree)) return;
       delete w.local.workingTree[path];

@@ -1,0 +1,40 @@
+{
+  "id": "ch08-practice",
+  "title": "実機演習：Claude Code と worktree で並列開発",
+  "level": "advanced",
+  "practice": true,
+  "doc": "practice.md",
+  "setup": { "initialized": false },
+  "steps": [
+    {
+      "type": "checklist",
+      "instruction": "Git Training のリポジトリ（または自分の練習用リポジトリ）で、worktree を2つ作ろう。",
+      "items": [
+        "git worktree add ../gt-feature-a -b feature-a で1つ目の作業フォルダを作った",
+        "git worktree add ../gt-feature-b -b feature-b で2つ目を作った",
+        "git worktree list で3つのフォルダが表示されることを確認した"
+      ]
+    },
+    {
+      "type": "checklist",
+      "instruction": "それぞれのフォルダで Claude Code を起動し、別々の小さな機能を作らせよう。",
+      "items": [
+        "../gt-feature-a で Claude Code に機能 A（例：コマンド辞典にコマンドを1つ追加）を依頼した",
+        "../gt-feature-b で Claude Code に機能 B（例：用語集に用語を1つ追加）を依頼した",
+        "それぞれの変更を自分で確認し、テスト（npm test）が通ることを確かめた",
+        "Claude Code に push と PR の作成を依頼し、2つの PR ができた"
+      ]
+    },
+    {
+      "type": "checklist",
+      "instruction": "PR をレビューしてマージし、後片付けをしよう。",
+      "items": [
+        "2つの PR の差分を GitHub で読み、必要なら修正を依頼した",
+        "1つ目をマージした後、2つ目の PR が main と食い違っていないか確認した（必要なら更新）",
+        "2つ目もマージした",
+        "git worktree remove ../gt-feature-a と ../gt-feature-b で作業フォルダを片付けた"
+      ],
+      "explain": "おつかれさまでした！ 1ヶ月の Git Training 完走です。ブランチ・PR・レビュー・履歴の修正・並列開発まで、チーム開発で必要な Git を一通り身につけました。"
+    }
+  ]
+}

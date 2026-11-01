@@ -14,7 +14,7 @@ describe('shell', () => {
   it('未知のコマンドと未実装の git コマンド', () => {
     const { world } = createWorld();
     expect(text(execute(world, 'vim a'))).toBe('vim: command not found');
-    expect(execute(world, 'git bisect start').output[1].text).toContain('第8章');
+    expect(execute(world, 'git mv a b').output[1].text).toContain('今後');
     expect(text(execute(world, 'git comit'))).toContain('commit');
   });
   it('allowedCommands で制限できる', () => {

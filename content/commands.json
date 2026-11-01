@@ -277,5 +277,52 @@
     "summary": "Issue の一覧を表示する",
     "danger": "safe",
     "category": "GitHub（第5章）"
+  },
+  "git worktree": {
+    "summary": "1つのリポジトリで作業フォルダを複数持つ（add / list / remove）。cd で移動して並列に作業できる",
+    "danger": "safe",
+    "category": "内部構造・発展（第8章）",
+    "detail": "`git worktree add ../hotfix` で hotfix ブランチを作って ../hotfix に展開。AI エージェントを並列で動かすときにも使います。"
+  },
+  "git bisect": {
+    "summary": "good と bad の間を二分探索して、バグが入ったコミットを見つける",
+    "danger": "safe",
+    "category": "内部構造・発展（第8章）",
+    "detail": "`git bisect start <bad> <good>` → `git bisect good / bad` を繰り返す（`git bisect run sh test.sh` で自動化）→ 最後に `git bisect reset`。"
+  },
+  "git cat-file": {
+    "summary": "オブジェクトの中身（-p）や種類（-t）を表示する",
+    "danger": "safe",
+    "category": "内部構造・発展（第8章）"
+  },
+  "git ls-tree": {
+    "summary": "ツリー（フォルダ）の中身を一覧する（-r で再帰）",
+    "danger": "safe",
+    "category": "内部構造・発展（第8章）"
+  },
+  "git rev-parse": {
+    "summary": "HEAD~2 などをコミット ID に変換する（--short / --abbrev-ref）",
+    "danger": "safe",
+    "category": "内部構造・発展（第8章）"
+  },
+  "git push --tags": {
+    "summary": "手元のタグをまとめてリモートに送る（git push だけではタグは送られない）",
+    "danger": "safe",
+    "category": "ブランチ戦略（第7章）"
+  },
+  "git tag -a": {
+    "summary": "注釈付きタグ（作成者・日時・メッセージ付き）を作る。リリースの印に使う",
+    "danger": "safe",
+    "category": "ブランチ戦略（第7章）"
+  },
+  "git merge --no-ff": {
+    "summary": "fast-forward できてもマージコミットを作る（Git Flow で「何を入れたか」を残す）",
+    "danger": "safe",
+    "category": "ブランチ戦略（第7章）"
+  },
+  "cd": {
+    "summary": "作業フォルダを移動する（このサイトでは git worktree の作業フォルダの間だけ）",
+    "danger": "safe",
+    "category": "シェル"
   }
 }

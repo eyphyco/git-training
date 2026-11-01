@@ -1,6 +1,7 @@
 // コミットグラフのレイアウト計算（列 = 時間順、行 = レーン）。描画とは分けてテストする。
 import { getCommit, peel } from '../../engine/model/objects';
 import { currentBranch, headOid } from '../../engine/model/refs';
+import { usedElsewhere } from '../../engine/worktrees';
 import type { Oid, RepoState } from '../../engine/model/types';
 
 export type Label = { key: string; text: string; kind: 'head' | 'branch' | 'remote' | 'tag'; current?: boolean; detached?: boolean };
@@ -84,7 +85,9 @@ export function layoutGraph(repo: RepoState, extraTips: Oid[] = []): Layout {
   const cur = currentBranch(repo);
   for (const t of roots) {
     if (t.kind === 'branch' && t.name === cur) push(t.oid, { key: 'HEAD', text: 'HEAD', kind: 'head' });
-    push(t.oid, { key: `${t.kind}:${t.name}`, text: t.kind === 'tag' ? `🏷 ${t.name}` : t.name, kind: t.kind, current: t.name === cur });
+    // ほかの作業フォルダ（git worktree）で使われているブランチには 📁 を付ける
+    const elsewhere = t.kind === 'branch' && usedElsewhere(repo, t.name);
+    push(t.oid, { key: `${t.kind}:${t.name}`, text: t.kind === 'tag' ? `🏷 ${t.name}` : elsewhere ? `${t.name} 📁` : t.name, kind: t.kind, current: t.name === cur });
   }
   if (repo.head.type === 'detached') {
     const list = labels.get(repo.head.oid) ?? [];

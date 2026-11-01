@@ -72,6 +72,12 @@ export type SequenceInProgress = InProgressBase & {
 
 export type InProgress = MergeInProgress | SequenceInProgress;
 
+/** worktree ごとに別々に持つもの（HEAD・ステージ・ワークツリー・途中の操作） */
+export type WorktreeState = { head: Head; index: Record<Path, Oid>; workingTree: Record<Path, string>; inProgress?: InProgress };
+
+/** git bisect の途中経過 */
+export type BisectState = { bad: Oid | null; good: Oid[]; skip: Oid[]; start: Head; log: string[] };
+
 export type RepoState = {
   initialized: boolean; // false の間は git init 以外の git コマンドが失敗する
   objects: Record<Oid, GitObject>;
@@ -93,6 +99,11 @@ export type RepoState = {
     /** 追跡ブランチの設定（ローカルブランチ → リモート名とブランチ名） */
     branches?: Record<string, { remote: string; merge: string }>;
   };
+  /** git worktree：今いる作業フォルダのパスと、ほかの作業フォルダの状態（今のフォルダの状態は head / index / workingTree にある） */
+  worktrees?: { cwd: string; others: Record<string, WorktreeState> };
+  /** .git/hooks/<名前> のスクリプト（このサイトの小さなシェルで実行する） */
+  hooks?: Record<string, string>;
+  bisect?: BisectState;
 };
 
 export type Review = { author: string; state: 'approved' | 'changes_requested' | 'commented'; body: string; time: number };
@@ -142,6 +153,9 @@ export type Hosting = {
   nextNumber?: number;
   /** 許可するマージ方式（GitHub のリポジトリ設定） */
   mergeMethods?: MergeMethod[];
+  /** チームのブランチ戦略（F-13）。ルール違反は violations に積む */
+  strategy?: 'github-flow' | 'git-flow' | 'gitlab-flow' | 'trunk';
+  violations?: string[];
 };
 
 export type World = {
@@ -164,11 +178,11 @@ export type GitEvent =
   | { type: 'FILE_RESTORED'; path: Path }
   | { type: 'COMMIT_CREATED'; oid: Oid; parents: Oid[]; branch: string | null; message: string }
   | { type: 'REF_MOVED'; ref: string; from: Oid | null; to: Oid; reason: 'commit' | 'fast-forward' | 'merge' | 'branch' }
-  | { type: 'BRANCH_CREATED'; name: string; oid: Oid }
+  | { type: 'BRANCH_CREATED'; name: string; oid: Oid; /** 起点に指定した名前（省略時は作ったときのブランチ） */ from?: string }
   | { type: 'BRANCH_DELETED'; name: string; oid: Oid }
   | { type: 'BRANCH_RENAMED'; from: string; to: string }
   | { type: 'HEAD_MOVED'; from: string; to: string; detached: boolean }
-  | { type: 'MERGE_FAST_FORWARD'; branch: string; from: Oid; to: Oid }
+  | { type: 'MERGE_FAST_FORWARD'; branch: string; from: Oid; to: Oid; theirs?: string }
   | { type: 'MERGE_COMMIT'; oid: Oid; theirs: string }
   | { type: 'CONFLICT'; paths: Path[]; theirs: string }
   | { type: 'MERGE_ABORTED' }

@@ -7,6 +7,7 @@ import 'monaco-editor/languages/definitions/javascript/register';
 import 'monaco-editor/languages/definitions/typescript/register';
 import 'monaco-editor/languages/definitions/html/register';
 import 'monaco-editor/languages/definitions/css/register';
+import 'monaco-editor/languages/definitions/shell/register';
 
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });

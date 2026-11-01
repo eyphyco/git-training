@@ -1,6 +1,7 @@
 import { fail, unsupported, type CommandDef, type Ctx } from '../command';
 import { commitFiles, getCommit, short, subject, writeBlob, writeCommit, writeTree } from '../model/objects';
 import { formatDate } from './log';
+import { runHook } from '../hooks';
 import { currentBranch, headOid, isAncestor, logRef, setBranch } from '../model/refs';
 import { computeStatus } from '../model/status';
 import type { Oid, Signature } from '../model/types';
@@ -51,7 +52,7 @@ export function cleanupMessage(parts: string[]): string {
 
 export const commit: CommandDef = {
   name: 'commit',
-  spec: { short: { m: 'message', a: 'all', q: 'quiet' }, multiple: ['message'], long: ['allow-empty', 'amend', 'no-edit'] },
+  spec: { short: { m: 'message', a: 'all', q: 'quiet', n: 'no-verify' }, multiple: ['message'], long: ['allow-empty', 'amend', 'no-edit', 'no-verify'] },
   run(ctx) {
     const repo = ctx.repo;
     const { opts } = ctx.args;
@@ -65,7 +66,7 @@ export const commit: CommandDef = {
         'コンフリクトが残っています。ファイルを直して git add してからコミットしましょう。',
       );
     const messages = (opts.message as string[] | undefined) ?? [];
-    if (opts.amend) return amend(ctx, messages, Boolean(opts['no-edit']), Boolean(opts.all));
+    if (opts.amend) return amend(ctx, messages, Boolean(opts['no-edit']), Boolean(opts.all), Boolean(opts['no-verify']));
     if (!messages.length && !merging && !seq)
       fail('このサイトではエディタが開けないため、-m でメッセージを指定してください。', '例: git commit -m "README を追加"（実 Git では -m なしだとエディタが開きます）');
     const message = messages.length ? cleanupMessage(messages) : (merging?.message ?? seq!.message);
@@ -91,6 +92,7 @@ export const commit: CommandDef = {
       else ctx.out(parent ? 'nothing to commit, working tree clean' : 'nothing to commit (create/copy files and use "git add" to track)');
       fail('', 'ステージに何も載っていないのでコミットできません。先に git add しましょう。');
     }
+    if (!opts['no-verify'] && !merging) verifyHooks(ctx, message);
     const parents = parent ? [parent] : [];
     if (merging) parents.push(merging.theirs);
     const before = commitFiles(repo, parent);
@@ -115,7 +117,14 @@ export const commit: CommandDef = {
 };
 
 /** git commit --amend：直前のコミットを作り直す（親はそのまま、作者と作者の時刻は元のまま） */
-function amend(ctx: Ctx, messages: string[], noEdit: boolean, all: boolean) {
+/** pre-commit と commit-msg の hook。失敗したらコミットを中止する */
+function verifyHooks(ctx: Ctx, message: string) {
+  if (!runHook(ctx, 'pre-commit')) fail('', 'pre-commit フックが 0 以外で終わったので、コミットを中止しました（--no-verify で飛ばせますが、チームのルールを破ることになります）。');
+  if (!runHook(ctx, 'commit-msg', ['.git/COMMIT_EDITMSG'], { '.git/COMMIT_EDITMSG': `${message}\n` }))
+    fail('', 'commit-msg フックがメッセージを受け付けなかったので、コミットを中止しました。メッセージを直してもう一度コミットします。');
+}
+
+function amend(ctx: Ctx, messages: string[], noEdit: boolean, all: boolean, noVerify = false) {
   const repo = ctx.repo;
   if (repo.inProgress?.op === 'merge') fail('fatal: You are in the middle of a merge -- cannot amend.', 'マージ中は amend できません。先にマージを完了するか中止しましょう。');
   const head = headOid(repo);
@@ -127,6 +136,7 @@ function amend(ctx: Ctx, messages: string[], noEdit: boolean, all: boolean) {
   }
   const old = getCommit(repo, head);
   const message = messages.length ? cleanupMessage(messages) : old.message;
+  if (!noVerify) verifyHooks(ctx, message);
   const oid = writeHeadCommit(ctx, { tree: writeTree(repo, { ...repo.index }), parents: old.parents, author: old.author, message, time: ctx.tick(), reflog: 'commit (amend)' });
   ctx.emit({ type: 'COMMIT_AMENDED', from: head, to: oid });
   const branch = currentBranch(repo);

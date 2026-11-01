@@ -97,6 +97,12 @@ export function Home() {
         <a href={href.compare()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-compare">
           ⚖️ 比較ビュー
         </a>
+        <a href={href.strategy()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-strategy">
+          🌿 ブランチ戦略
+        </a>
+        <a href={href.scenarios()} className="glass-btn px-4 py-3 font-bold" data-testid="nav-scenarios">
+          🎯 実戦シナリオ
+        </a>
       </section>
 
       <Dashboard />
