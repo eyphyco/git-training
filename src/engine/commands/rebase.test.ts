@@ -153,3 +153,29 @@ describe('git rebase -i', () => {
     expect(r.world.local.head).toEqual({ type: 'symbolic', ref: 'main' });
   });
 });
+
+describe('git rebase --autosquash', () => {
+  const fx: Setup = {
+    commits: [
+      { id: 'c1', msg: 'init', files: { 'a.txt': 'a\n' } },
+      { id: 'f1', parent: 'c1', msg: 'add login', files: { 'login.js': 'logn()\n' } },
+      { id: 'f2', parent: 'f1', msg: 'add logout', files: { 'logout.js': 'out()\n' } },
+      { id: 'f3', parent: 'f2', msg: 'fixup! add login', files: { 'login.js': 'login()\n' } },
+    ],
+    branches: { main: 'c1', feature: 'f3' },
+    head: 'feature',
+  };
+  it('-i では fixup! のコミットを元のコミットの直後に fixup として並べる', () => {
+    const r = repoWith(fx, ['git rebase -i --autosquash main']);
+    const todo = pendingEditor(r.world)!.text.split('\n').slice(0, 3);
+    expect(todo.map((l) => l.replace(/ [0-9a-f]{7} /, ' X '))).toEqual(['pick X # add login', 'fixup X # fixup! add login', 'pick X # add logout']);
+    const done = saveEditor(r.world, pendingEditor(r.world)!.path, pendingEditor(r.world)!.text);
+    expect(messages(done.world)).toEqual(['add logout', 'add login', 'init']);
+    expect(done.world.local.workingTree['login.js']).toBe('login()\n');
+  });
+  it('-i なしでもそのまま適用する', () => {
+    const r = repoWith(fx, ['git rebase --autosquash main']);
+    expect(r.ok).toBe(true);
+    expect(messages(r.world)).toEqual(['add logout', 'add login', 'init']);
+  });
+});

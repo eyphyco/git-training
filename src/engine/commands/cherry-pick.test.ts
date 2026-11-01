@@ -61,4 +61,8 @@ describe('git cherry-pick', () => {
   it('途中でないのに --continue はエラー', () => {
     expect(text(repoWith(setup, ['git cherry-pick --continue']))).toContain('no cherry-pick in progress');
   });
+  it('-x は元のコミットを「(cherry picked from commit …)」としてメッセージに残す', () => {
+    const r = repoWith(setup, ['git cherry-pick -x feature~1']);
+    expect(getCommit(r.world.local, r.world.local.refs.heads.main).message).toBe(`fix typo\n\n(cherry picked from commit ${r.aliases.f1})`);
+  });
 });

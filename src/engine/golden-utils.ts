@@ -34,8 +34,8 @@ function simRef(world: World, ref: string) {
   return world.local.refs.heads[ref];
 }
 
-/** シミュレータと実 Git の両方で手順を実行し、各ブランチの指すコミットを返す */
-export function runBoth(steps: Step[], branches: string[]) {
+/** シミュレータと実 Git の両方で手順を実行し、各ブランチの指すコミットを返す。outputs のコマンドは最後に両方で実行し、出力を返す */
+export function runBoth(steps: Step[], branches: string[], outputs: string[] = []) {
   const dir = mkdtempSync(join(tmpdir(), 'git-golden-'));
   try {
     let world: World = createWorld({ initialized: false }).world;
@@ -98,7 +98,12 @@ export function runBoth(steps: Step[], branches: string[]) {
     const real = Object.fromEntries(branches.map((b) => [b, git(['rev-parse', b]).trim()]));
     const sim = Object.fromEntries(branches.map((b) => [b, simRef(world, b)]));
     const realTree = git(['rev-parse', 'HEAD^{tree}']).trim();
-    return { real, sim, world, realTree };
+    const argv = (line: string) => line.match(/"[^"]*"|\S+/g)!.map((a) => a.replace(/^"|"$/g, ''));
+    const out = {
+      real: outputs.map((l) => git(argv(l)).replace(/\n$/, '')),
+      sim: outputs.map((l) => execute(world, `git ${l}`).output.map((o) => o.text).join('\n')),
+    };
+    return { real, sim, world, realTree, out };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

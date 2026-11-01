@@ -108,6 +108,13 @@ export const push: CommandDef = {
           'リモートに、あなたの手元にないコミットがあります（誰かが先に push しました）。git pull で取り込んでから、もう一度 push しましょう。',
         );
       }
+      // --force-with-lease：リモートが「最後に fetch したときの位置（origin/<branch>）」から動いていたら上書きしない
+      const lease = repo.refs.remotes[remoteName]?.[dst] ?? null;
+      if (opts['force-with-lease'] && !opts.force && old !== lease) {
+        ctx.out(`To ${url}`);
+        ctx.out(` ! [rejected]        ${src} -> ${dst} (stale info)`, 'red');
+        fail(`error: failed to push some refs to '${url}'`, `最後に fetch してから、誰かが ${dst} に push しています。--force-with-lease は、その人のコミットを消さないように止めました。git fetch して、git log ${remoteName}/${dst} で中身を確かめてから取り込みましょう。`);
+      }
       if (protection && old && !isAncestor(repo, old, oid)) rejectProtected('Cannot force-push to this branch', '保護されたブランチには force push できません。');
       if (protection?.requirePullRequest) rejectProtected('Changes must be made through a pull request.', `${dst} は保護されていて、直接 push できません。作業用のブランチを push して PR を作り、そこからマージします。`);
       copyObjects(repo, remote, [oid]);

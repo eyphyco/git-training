@@ -32,6 +32,12 @@
     "category": "基本",
     "detail": "`-m \"メッセージ\"` でメッセージを指定。`-a` を付けると追跡中ファイルの変更を自動で add します（未追跡ファイルは対象外）。マージ中は `-m` を省くと既定のメッセージになります。"
   },
+  "git commit --fixup": {
+    "summary": "指定したコミットを直すためのコミットを「fixup! 件名」で作る",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）",
+    "detail": "後で `git rebase -i --autosquash` すると、元のコミットにまとめられます。レビュー指摘への対応で使います。"
+  },
   "git commit --amend": {
     "summary": "直前のコミットを作り直す（メッセージ修正・入れ忘れの追加）。push 済みには使わない",
     "danger": "caution",
@@ -109,6 +115,12 @@
     "danger": "danger",
     "category": "リモート",
     "detail": "リモートの履歴を手元の内容で上書きします。他の人が push したコミットが消えるため、共有ブランチでは使わないこと。"
+  },
+  "git push --force-with-lease": {
+    "summary": "最後に fetch したときからリモートが動いていなければ上書きする。--force より安全",
+    "danger": "caution",
+    "category": "リモート",
+    "detail": "自分のブランチを rebase / amend した後に使います。誰かが先に push していると **stale info** で止まります。ただし `git fetch` した後は通ってしまうので、fetch したら `git log origin/<ブランチ>` で中身を確かめてから。"
   },
   "git pull": {
     "summary": "リモートの変更を取得して今のブランチに取り込む（fetch + merge）",
@@ -207,6 +219,12 @@
     "category": "履歴の修正（第6章）",
     "detail": "エディタに todo が開くので、行の先頭を書き換えて保存します。"
   },
+  "git rebase --autosquash": {
+    "summary": "「fixup! 件名」のコミットを、その件名のコミットに自動でまとめる",
+    "danger": "caution",
+    "category": "履歴の修正（第6章）",
+    "detail": "`git commit --fixup <コミット>` と組み合わせます。`-i` を付けると、並べ替えた todo を確かめてから実行できます。"
+  },
   "git reset --soft": {
     "summary": "ブランチだけ戻し、変更はステージに残す（コミットのまとめ直しに使う）",
     "danger": "caution",
@@ -221,6 +239,12 @@
     "summary": "指定したコミットの変更だけを、今のブランチに新しいコミットとしてコピーする",
     "danger": "safe",
     "category": "履歴の修正（第6章）"
+  },
+  "git cherry-pick -x": {
+    "summary": "cherry-pick したコミットのメッセージに、元のコミット ID を書き足す",
+    "danger": "safe",
+    "category": "履歴の修正（第6章）",
+    "detail": "リリース版への修正の移植（backport）でよく使います。どこから持ってきたかが後で分かります。"
   },
   "git reflog": {
     "summary": "HEAD やブランチが動いた記録を表示する。消えたコミットの救出に使う",

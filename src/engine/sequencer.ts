@@ -152,7 +152,8 @@ function applyItem(ctx: Ctx, s: SequenceInProgress, item: TodoItem): boolean {
     return afterCommit(ctx, s, item);
   }
   const revert = s.op === 'revert';
-  const message = revert ? revertMessage(ctx, item.oid) : c.message;
+  // cherry-pick -x：どのコミットから持ってきたかをメッセージの最後に残す
+  const message = revert ? revertMessage(ctx, item.oid) : s.recordOrigin ? `${c.message.replace(/\n+$/, '')}\n\n(cherry picked from commit ${item.oid})` : c.message;
   const [base, theirs] = revert ? [item.oid, parent] : [parent, item.oid];
   const oursFiles = commitFiles(repo, head);
   const m = mergeTrees(repo, commitFiles(repo, base), oursFiles, commitFiles(repo, theirs), { ours: 'HEAD', theirs: `${revert ? 'parent of ' : ''}${label(ctx, item.oid)}` });

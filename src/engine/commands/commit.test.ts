@@ -36,4 +36,12 @@ describe('git commit', () => {
   it('--amend は未対応メッセージ', () => {
     expect(fresh(['git commit --amend -m x']).ok).toBe(false);
   });
+  it('--fixup は「fixup! 元の件名」というメッセージでコミットする', () => {
+    const r = fresh(['echo a > a', 'git add a', 'git commit -m "add a"', 'echo b > b', 'git add b', 'git commit -m "add b"', 'echo A > a', 'git add a', 'git commit --fixup HEAD~1']);
+    expect(r.ok).toBe(true);
+    expect(getCommit(r.world.local, r.world.local.refs.heads.main).message).toBe('fixup! add a');
+    expect(text(r)).toMatch(/^\[main [0-9a-f]{7}\] fixup! add a\n/);
+    const withBody = fresh(['echo a > a', 'git add a', 'git commit -m one', 'echo b > a', 'git commit -a --fixup=HEAD -m extra']);
+    expect(getCommit(withBody.world.local, withBody.world.local.refs.heads.main).message).toBe('fixup! one\n\nextra');
+  });
 });
