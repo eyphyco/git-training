@@ -3,8 +3,10 @@ import { execute } from '../engine/run';
 import { teammatePush, type TeammatePush } from '../engine/remote';
 import { createWorld, type Setup } from '../engine/world';
 import type { World } from '../engine/model/types';
+import { applyHostingEvent, type HostingEvent } from '../hosting/events';
+import { GH } from '../hosting/gh';
 
-export type FigureStep = { commands?: string[]; teammatePush?: TeammatePush; caption: string };
+export type FigureStep = { commands?: string[]; teammatePush?: TeammatePush; event?: HostingEvent; caption: string };
 export type Figure = { id: string; title: string; show?: ('graph' | 'areas')[]; setup: Setup; intro: string; steps: FigureStep[] };
 export type FigureFrame = { world: World; caption: string; command?: string };
 
@@ -16,12 +18,13 @@ export function buildFrames(fig: Figure): FigureFrame[] {
   const frames: FigureFrame[] = [{ world, caption: fig.intro }];
   for (const step of fig.steps) {
     if (step.teammatePush) world = teammatePush(world, step.teammatePush).world;
+    if (step.event) world = applyHostingEvent(world, step.event).world;
     for (const cmd of step.commands ?? []) {
-      const r = execute(world, cmd);
+      const r = execute(world, cmd, { programs: { gh: GH } });
       if (!r.ok) throw new Error(`figure ${fig.id}: "${cmd}" failed: ${r.output.map((o) => o.text).join(' / ')}`);
       world = r.world;
     }
-    frames.push({ world, caption: step.caption, command: step.commands?.join(' && ') ?? (step.teammatePush ? `（${step.teammatePush.author} さんが push）` : undefined) });
+    frames.push({ world, caption: step.caption, command: step.commands?.join(' && ') ?? (step.teammatePush ? `（${step.teammatePush.author} さんが push）` : step.event ? `（${step.event.author} さん：GitHub）` : undefined) });
   }
   return frames;
 }

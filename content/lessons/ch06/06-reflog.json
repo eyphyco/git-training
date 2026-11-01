@@ -1,0 +1,61 @@
+{
+  "id": "ch06-06",
+  "title": "reflog：消えたコミットを取り戻す",
+  "level": "advanced",
+  "doc": "06-reflog.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# App\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add login", "files": { "login.js": "login()\n" } },
+      { "id": "c3", "parent": "c2", "msg": "add logout", "files": { "logout.js": "logout()\n" } },
+      { "id": "c4", "parent": "c3", "msg": "add profile", "files": { "profile.js": "profile()\n" } },
+      { "id": "e1", "parent": "c4", "msg": "experiment: dark mode", "files": { "dark.css": "body { background: #000; }\n" } }
+    ],
+    "branches": { "main": "c4", "experiment": "e1" }
+  },
+  "steps": [
+    {
+      "instruction": "まず事故を再現します。`git reset --hard HEAD~2` で、main を2つ前まで戻してしまおう。",
+      "hints": ["git reset --hard HEAD~2"],
+      "answer": ["git reset --hard HEAD~2"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c2" }],
+      "explain": "「add logout」「add profile」がグラフから消えました。でも、コミット自体はまだ .git の中に残っています。"
+    },
+    {
+      "instruction": "`git reflog` で、HEAD がこれまでどこにいたかの記録を見よう。",
+      "hints": ["git reflog"],
+      "answer": ["git reflog"],
+      "check": [{ "type": "commandUsed", "command": "git reflog" }],
+      "explain": "HEAD@{0} が今（reset 後）、HEAD@{1} が reset する直前の「add profile」です。"
+    },
+    {
+      "instruction": "reset する直前の状態（HEAD@{1}）に戻して、消えたコミットを取り戻そう。",
+      "hints": ["reset --hard に HEAD@{1} を指定", "git reset --hard HEAD@{1}"],
+      "answer": ["git reset --hard HEAD@{1}"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c4" }],
+      "explain": "復活しました！ reflog は「HEAD やブランチが動いた記録」なので、reset や rebase の前に戻れます。"
+    },
+    {
+      "instruction": "次の事故：実験用ブランチ experiment を `git branch -D` で消してしまおう。出力の「was 〜」に注目。",
+      "hints": ["git branch -D experiment"],
+      "answer": ["git branch -D experiment"],
+      "check": [{ "type": "branchExists", "name": "experiment", "exists": false }],
+      "explain": "「Deleted branch experiment (was 〜)」の 〜 が、消したブランチが指していたコミットの ID です。"
+    },
+    {
+      "instruction": "その ID を使って、ブランチ experiment を作り直そう：`git branch experiment <ID>`。",
+      "hints": ["直前の出力の「was」の後ろの7桁", "git branch experiment 01ba207"],
+      "answer": ["git branch experiment 01ba207"],
+      "check": [{ "type": "refEquals", "ref": "experiment", "to": "e1" }],
+      "explain": "ブランチは「コミットを指す名札」なので、ID さえ分かれば何度でも付け直せます。"
+    },
+    {
+      "type": "quiz",
+      "question": "reflog で取り戻せないものはどれ？",
+      "choices": ["reset --hard で消えたコミット", "rebase 前のコミット", "一度もコミットしていない（git add もしていない）変更"],
+      "answer": 2,
+      "explain": "reflog は「コミットの位置の記録」です。コミットしていない変更は記録されないので取り戻せません。迷ったらまずコミット（か stash）しておきましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "reset", "reflog", "branch", "switch", "add", "commit"]
+}

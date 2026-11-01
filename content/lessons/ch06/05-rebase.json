@@ -1,0 +1,53 @@
+{
+  "id": "ch06-05",
+  "title": "rebase と rebase -i",
+  "level": "advanced",
+  "doc": "05-rebase.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "update readme", "files": { "README.md": "# Shop\n\nOnline shop.\n" } },
+      { "id": "f1", "parent": "c1", "msg": "add cart", "files": { "cart.js": "export const cart = [];\n" } },
+      { "id": "f2", "parent": "f1", "msg": "fix typo in cart", "files": { "cart.js": "export const cart = [];\n// cart\n" } },
+      { "id": "f3", "parent": "f2", "msg": "add cart test", "files": { "cart.test.js": "test('cart')\n" } }
+    ],
+    "branches": { "main": "c2", "feature/cart": "f3" },
+    "head": "feature/cart"
+  },
+  "steps": [
+    {
+      "instruction": "feature/cart を作った後に main が進みました。feature/cart のコミットを main の最新の先に付け替えよう。",
+      "hints": ["今いるブランチ（feature/cart）を、指定した先に付け替えるのが rebase", "git rebase main"],
+      "answer": ["git rebase main"],
+      "check": [
+        { "type": "graphShape", "expected": { "commits": [{ "msg": "init" }, { "msg": "update readme", "parents": ["init"] }, { "msg": "add cart", "parents": ["update readme"] }, { "msg": "fix typo in cart", "parents": ["add cart"] }, { "msg": "add cart test", "parents": ["fix typo in cart"] }], "branches": { "main": "update readme", "feature/cart": "add cart test" } } }
+      ],
+      "explain": "履歴が一直線になりました。3つのコミットは作り直されたので、ID が変わっています。"
+    },
+    {
+      "instruction": "「fix typo in cart」は「add cart」の直し忘れなので、1つにまとめたい。直近3つのコミットを対象に `git rebase -i` を始めよう。",
+      "hints": ["直近3つは HEAD~3 から先", "git rebase -i HEAD~3"],
+      "answer": ["git rebase -i HEAD~3"],
+      "check": [{ "type": "inProgress", "op": "rebase" }],
+      "explain": "エディタタブに git-rebase-todo が開きました。上から順に、この内容で実行されます。"
+    },
+    {
+      "instruction": "エディタで、「fix typo in cart」の行の先頭 `pick` を `fixup` に書き換えて保存しよう（fixup ＝直前のコミットに混ぜて、メッセージは捨てる）。",
+      "hints": ["2行目が「fix typo in cart」です", "pick abc1234 # fix typo in cart → fixup abc1234 # fix typo in cart", "書き換えたら「保存（Ctrl+S）」"],
+      "answer": [{ "edit": ".git/rebase-merge/git-rebase-todo", "content": "pick 60bd8a8 # add cart\nfixup d5546f5 # fix typo in cart\npick 54a6427 # add cart test\n\n# Rebase f822941..54a6427 onto f822941 (3 commands)\n#\n# Commands:\n# p, pick <commit> = use commit\n# r, reword <commit> = use commit, but edit the commit message\n# e, edit <commit> = use commit, but stop for amending\n# s, squash <commit> = use commit, but meld into previous commit\n# f, fixup <commit> = like \"squash\" but keep only the previous\n#                    commit's log message\n# d, drop <commit> = remove commit\n#\n# These lines can be re-ordered; they are executed from top to bottom.\n#\n# If you remove a line here THAT COMMIT WILL BE LOST.\n#\n# However, if you remove everything, the rebase will be aborted.\n#\n# （Git Training）行の先頭の pick を書き換えたり、行を並べ替えたりして保存します。\n# exec / break / label などは、このサイトでは未対応です。\n" }],
+      "check": [
+        { "type": "inProgress", "op": null },
+        { "type": "graphShape", "expected": { "commits": [{ "msg": "init" }, { "msg": "update readme", "parents": ["init"] }, { "msg": "add cart", "parents": ["update readme"] }, { "msg": "add cart test", "parents": ["add cart"] }], "branches": { "main": "update readme", "feature/cart": "add cart test" } } }
+      ],
+      "explain": "「add cart」に typo の修正が混ざり、コミットが1つ減りました。"
+    },
+    {
+      "type": "quiz",
+      "question": "すでに push して他の人も使っているブランチを rebase すると？",
+      "choices": ["何も問題ない", "コミットが作り直されるので push に --force が必要になり、他の人の手元と食い違う", "rebase できない"],
+      "answer": 1,
+      "explain": "rebase は履歴の書き換えです。自分だけのブランチ（push 前、または PR 前の整理）で使いましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "rebase", "switch", "branch", "add", "commit", "reflog"]
+}

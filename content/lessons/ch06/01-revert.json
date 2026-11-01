@@ -1,0 +1,39 @@
+{
+  "id": "ch06-01",
+  "title": "revert：push 済みのコミットを打ち消す",
+  "level": "advanced",
+  "doc": "01-revert.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "app.js": "show('ok')\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add about page", "files": { "about.html": "<h1>About</h1>\n" } },
+      { "id": "c3", "parent": "c2", "msg": "change message", "files": { "app.js": "show('BROKEN')\n" } }
+    ],
+    "branches": { "main": "c3" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c3" } } }
+  },
+  "steps": [
+    {
+      "instruction": "最新のコミット「change message」でアプリが壊れました。すでに push 済みなので、**打ち消すコミット**を作って直そう。",
+      "hints": ["履歴を消さずに取り消すのは git revert", "このサイトではエディタが開かないので --no-edit を付けます", "git revert --no-edit HEAD"],
+      "answer": ["git revert --no-edit HEAD"],
+      "check": [{ "type": "fileContent", "path": "app.js", "area": "head", "equals": "show('ok')\n" }, { "type": "commitCount", "ref": "main", "count": 4 }],
+      "explain": "「Revert \"change message\"」というコミットが増えました。壊れたコミットも履歴に残ったままです。"
+    },
+    {
+      "instruction": "git push して、チームにも直したことを届けよう。",
+      "hints": ["git push"],
+      "answer": ["git push"],
+      "check": [{ "type": "remoteEquals", "ref": "main" }, { "type": "commandNotUsed", "command": "git push --force" }],
+      "explain": "コミットが「増えた」だけなので、--force なしで普通に push できました。"
+    },
+    {
+      "type": "quiz",
+      "question": "push 済みのコミットを取り消すとき、revert が reset より安全な理由は？",
+      "choices": ["revert の方が速いから", "履歴を書き換えず「打ち消すコミット」を足すので、他の人の手元と食い違わないから", "revert はコミットを完全に消すから"],
+      "answer": 1,
+      "explain": "reset で履歴を巻き戻すと、push に --force が必要になり、チームの手元の履歴と食い違います。共有した履歴は revert で直すのが原則です。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "diff", "show", "revert", "push", "pull", "fetch", "add", "commit"]
+}

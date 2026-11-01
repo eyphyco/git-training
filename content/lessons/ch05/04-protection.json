@@ -1,0 +1,62 @@
+{
+  "id": "ch05-04",
+  "title": "ブランチ保護と Issue 連携",
+  "level": "intermediate",
+  "doc": "04-protection.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add search box", "files": { "search.html": "<input type=search>\n" } }
+    ],
+    "branches": { "main": "c2" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "tracking": { "origin/main": "c1" },
+    "hosting": {
+      "protections": [{ "branch": "main", "requirePullRequest": true }],
+      "issues": [{ "number": 1, "title": "トップページに検索ボックスがほしい", "body": "商品を探しやすくしたいです。", "author": "sato", "state": "open" }]
+    }
+  },
+  "steps": [
+    {
+      "instruction": "うっかり main で「add search box」をコミットしてしまいました。そのまま git push してみよう。",
+      "hints": ["git push"],
+      "answer": ["git push"],
+      "expectError": true,
+      "check": [{ "type": "commandUsed", "command": "git push" }],
+      "explain": "「GH006: Protected branch update failed」で拒否されました。main は **ブランチ保護** で「PR 必須」になっているので、直接 push できません。"
+    },
+    {
+      "instruction": "今のコミットを持ったまま、ブランチ feature/search を作って移動し、GitHub に push しよう。",
+      "hints": ["git switch -c で今のコミットのままブランチを作れます", "git switch -c feature/search → git push -u origin feature/search"],
+      "answer": ["git switch -c feature/search", "git push -u origin feature/search"],
+      "check": [{ "type": "remoteEquals", "ref": "feature/search" }]
+    },
+    {
+      "instruction": "Issue #1 を解決する PR を作ろう。本文に `Closes #1` と書くと、マージしたときに Issue が自動で閉じます。",
+      "hints": ["gh pr create --title \"...\" --body \"Closes #1\"", "gh pr create --title \"検索ボックスを追加\" --body \"Closes #1\""],
+      "answer": ["gh pr create --title \"検索ボックスを追加\" --body \"Closes #1\""],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "open" }]
+    },
+    {
+      "instruction": "PR をマージ（merge commit）しよう。Issues タブで #1 がどうなるか見てみましょう。",
+      "hints": ["gh pr merge --merge"],
+      "answer": ["gh pr merge --merge"],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "merged" }, { "type": "issueState", "number": 1, "state": "closed" }],
+      "explain": "Issue #1 が「#2 で解決」として閉じました。Issue（課題）と PR（解決）がつながるので、後から「なぜこの変更をしたか」を辿れます。"
+    },
+    {
+      "instruction": "main に戻って git pull しよう。",
+      "hints": ["git switch main → git pull"],
+      "answer": ["git switch main", "git pull"],
+      "check": [{ "type": "headOn", "branch": "main" }, { "type": "remoteEquals", "ref": "main" }]
+    },
+    {
+      "type": "quiz",
+      "question": "ブランチ保護で「Require a pull request before merging」を有効にすると？",
+      "choices": ["main に誰も push もマージもできなくなる", "main への直接 push が禁止され、PR からのマージだけになる", "PR が自動でマージされる"],
+      "answer": 1,
+      "explain": "変更は必ず PR（＝レビューの機会）を通るようになります。承認の必要数や CI の成功も条件にできます（GitHub タブの Settings）。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "push", "fetch", "pull"]
+}
