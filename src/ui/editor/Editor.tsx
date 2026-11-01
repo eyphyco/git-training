@@ -49,7 +49,9 @@ export default function Editor({ repo, pending, path, onSelect, onSave }: Props)
   // git が待っているファイルは、書き換えずに保存してもよい（todo をそのまま実行する）
   const canSave = isPending || dirty;
 
-  useEffect(() => setDraft(saved ?? ''), [path, saved]);
+  useEffect(() => {
+    setDraft(saved ?? '');
+  }, [path, saved]);
 
   useEffect(() => {
     const ed = editorRef.current;

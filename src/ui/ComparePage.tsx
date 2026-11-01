@@ -24,7 +24,9 @@ function Column({ preset, side, testid }: { preset: ComparePreset; side: Side; t
   const [input, setInput] = useState('');
   const [step, setStep] = useState(0);
   const bottom = useRef<HTMLDivElement>(null);
-  useEffect(() => bottom.current?.scrollIntoView({ block: 'end' }), [lines]);
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ block: 'end' });
+  }, [lines]);
 
   const run = (w: World, line: string) => {
     const r = execute(w, line, { programs: PROGRAMS });

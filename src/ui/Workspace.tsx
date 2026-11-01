@@ -80,13 +80,15 @@ function Workspace({ session, pane }: { session: Session; pane(t: MobileTab): st
   const highlight = session.lastEvents.flatMap((e) => (e.type === 'COMMIT_CREATED' ? [e.oid] : []));
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]">
+    <div
+      className={`flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid ${view === 'github' ? 'lg:grid-rows-[minmax(120px,0.55fr)_auto_minmax(280px,1.7fr)_minmax(180px,0.75fr)]' : 'lg:grid-rows-[minmax(150px,1fr)_auto_minmax(170px,1fr)_minmax(220px,0.9fr)]'}`}
+    >
       <div className={`${pane('visual')} glass min-h-[180px] flex-1 flex-col overflow-hidden rounded-2xl lg:flex`}>
         <ReplayBar timeline={session.timeline} index={replaying ? replay : null} onChange={setReplay} />
         <div className="relative min-h-0 flex-1">
           {replaying && <div className="absolute top-2 right-3 z-10 rounded-full bg-sky-500/80 px-2 py-0.5 text-xs text-white">再生中（操作はできません）</div>}
           {preview && !replaying && (
-            <div className="absolute top-2 right-3 left-3 z-10 rounded-xl border border-violet-300/70 bg-violet-100/80 px-2 py-1 text-xs text-violet-900 backdrop-blur-md dark:bg-violet-500/20 dark:text-violet-100" data-testid="preview-banner">
+            <div className="absolute right-3 bottom-6 left-3 z-10 rounded-xl border border-violet-300/70 bg-violet-100/80 px-2 py-1 text-xs text-violet-900 backdrop-blur-md dark:bg-violet-500/20 dark:text-violet-100" data-testid="preview-banner">
               👁 プレビュー：<code className="font-bold">{draft.trim()}</code> を Enter で実行するとこうなります（点線 = 新しくできるコミット、薄い × = どのブランチからも辿れなくなるコミット）
             </div>
           )}
