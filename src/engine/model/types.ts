@@ -95,13 +95,59 @@ export type RepoState = {
   };
 };
 
-export type PullRequest = { id: number; title: string; head: string; base: string; state: 'open' | 'merged' | 'closed' };
-export type BranchProtection = { branch: string; requirePullRequest: boolean };
+export type Review = { author: string; state: 'approved' | 'changes_requested' | 'commented'; body: string; time: number };
+/** PR のコメント。path / line があれば「Files changed」の行へのコメント */
+export type PrComment = { author: string; body: string; time: number; path?: Path; line?: number };
+export type MergeMethod = 'merge' | 'squash' | 'rebase';
+
+export type PullRequest = {
+  number: number;
+  title: string;
+  body: string;
+  author: string;
+  /** origin 上のブランチ名 */
+  head: string;
+  base: string;
+  state: 'open' | 'merged' | 'closed';
+  draft?: boolean;
+  reviews: Review[];
+  comments: PrComment[];
+  createdAt: number;
+  merged?: { method: MergeMethod; oid: Oid; by: string; time: number };
+};
+
+export type Issue = { number: number; title: string; body: string; author: string; state: 'open' | 'closed'; closedBy?: number };
+
+export type BranchProtection = {
+  branch: string;
+  /** main へ直接 push できず、PR を通す必要がある */
+  requirePullRequest: boolean;
+  /** マージに必要な承認（Approve）の数 */
+  requiredApprovals?: number;
+  /** CI のチェックが通っていないとマージできない */
+  requireStatusChecks?: boolean;
+  /** CODEOWNERS に書かれた人の承認が必要 */
+  requireCodeOwnerReviews?: boolean;
+};
+
+/** 模擬 CI のチェック。failIf の文字列がファイルにあれば失敗する（なければ常に成功） */
+export type CiRule = { name: string; description?: string; failIf?: { path: Path; contains: string } };
+
+export type Hosting = {
+  pullRequests: PullRequest[];
+  protections: BranchProtection[];
+  issues?: Issue[];
+  ci?: CiRule[];
+  /** PR と Issue で共通の通し番号の次の値 */
+  nextNumber?: number;
+  /** 許可するマージ方式（GitHub のリポジトリ設定） */
+  mergeMethods?: MergeMethod[];
+};
 
 export type World = {
   local: RepoState;
   remotes: Record<string, RepoState>;
-  hosting: { pullRequests: PullRequest[]; protections: BranchProtection[] };
+  hosting: Hosting;
   clock: number; // 決定的な時刻（UNIX 秒）。コミットごとに進む
 };
 
@@ -147,6 +193,14 @@ export type GitEvent =
   | { type: 'STASH_DROPPED'; oid: Oid }
   | { type: 'TAG_CREATED'; name: string; oid: Oid; annotated: boolean }
   | { type: 'TAG_DELETED'; name: string }
+  | { type: 'PR_OPENED'; number: number; author: string; head: string; base: string }
+  | { type: 'PR_REVIEWED'; number: number; author: string; state: Review['state'] }
+  | { type: 'PR_COMMENTED'; number: number; author: string }
+  | { type: 'PR_MERGED'; number: number; method: MergeMethod; oid: Oid; base: string }
+  | { type: 'PR_CLOSED'; number: number }
+  | { type: 'ISSUE_CLOSED'; number: number; by: number }
+  | { type: 'PROTECTION_CHANGED'; branch: string }
+  | { type: 'PUSH_PROTECTED'; branch: string; reason: string }
   | { type: 'CLEAR' };
 
 export type Tone = 'normal' | 'green' | 'red' | 'yellow' | 'cyan' | 'dim' | 'error' | 'hint';

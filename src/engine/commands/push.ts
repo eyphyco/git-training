@@ -32,6 +32,19 @@ export const push: CommandDef = {
     const url = remoteUrl(repo, remoteName);
     const updates: RefUpdate[] = [];
 
+    // GitHub のブランチ保護（hosting 層の設定。origin だけが対象）
+    const protection = remoteName === 'origin' ? ctx.world.hosting.protections.find((p) => p.branch === (opts.delete ? src : dst)) : undefined;
+    const rejectProtected = (reason: string, ja: string) => {
+      ctx.out('remote: error: GH006: Protected branch update failed for refs/heads/' + (opts.delete ? src : dst) + '.', 'red');
+      ctx.out('remote: ');
+      ctx.out(`remote: - ${reason}`, 'red');
+      ctx.out(`To ${url}`);
+      ctx.out(` ! [remote rejected] ${opts.delete ? `(delete)` : src} -> ${opts.delete ? src : dst} (protected branch hook declined)`, 'red');
+      ctx.emit({ type: 'PUSH_PROTECTED', branch: opts.delete ? src : dst, reason });
+      fail(`error: failed to push some refs to '${url}'`, ja);
+    };
+    if (protection && (opts.delete || src === '')) rejectProtected('Cannot delete this branch', '保護されたブランチは削除できません。');
+
     if (opts.delete || src === '') {
       const name = opts.delete ? src : dst;
       const old = remote.refs.heads[name];
@@ -65,6 +78,8 @@ export const push: CommandDef = {
           'リモートに、あなたの手元にないコミットがあります（誰かが先に push しました）。git pull で取り込んでから、もう一度 push しましょう。',
         );
       }
+      if (protection && old && !isAncestor(repo, old, oid)) rejectProtected('Cannot force-push to this branch', '保護されたブランチには force push できません。');
+      if (protection?.requirePullRequest) rejectProtected('Changes must be made through a pull request.', `${dst} は保護されていて、直接 push できません。作業用のブランチを push して PR を作り、そこからマージします。`);
       copyObjects(repo, remote, [oid]);
       // 空のリポジトリに最初に push したブランチが既定ブランチになる（GitHub と同じ）
       if (!Object.keys(remote.refs.heads).length) remote.head = { type: 'symbolic', ref: dst };
@@ -72,6 +87,13 @@ export const push: CommandDef = {
       repo.refs.remotes[remoteName] = { ...(repo.refs.remotes[remoteName] ?? {}), [dst]: oid };
       const u: RefUpdate = { ref: dst, from: old, to: oid, forced: !!old && !isAncestor(repo, old, oid) };
       updates.push(u);
+      if (!old && remoteName === 'origin' && /github\.com/.test(url) && Object.keys(remote.refs.heads).length > 1) {
+        const slug = url.replace(/^.*github\.com[/:]/, '').replace(/\.git$/, '');
+        ctx.out('remote: ');
+        ctx.out(`remote: Create a pull request for '${dst}' on GitHub by visiting:`);
+        ctx.out(`remote:      https://github.com/${slug}/pull/new/${dst}`);
+        ctx.out('remote: ');
+      }
       ctx.out(`To ${url}`);
       ctx.out(refLine(u, src, dst));
       if (u.forced) ctx.hint('⚠️ force push でリモートの履歴を上書きしました。他の人が持っているコミットが消えることがあり、チーム開発では原則禁止です。');

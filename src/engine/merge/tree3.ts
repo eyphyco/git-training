@@ -1,5 +1,5 @@
 // ファイル単位の 3-way マージ（merge / cherry-pick / revert / rebase / stash apply の共通処理）。
-import { getBlob, writeBlob } from '../model/objects';
+import { getBlob, hashBlob, writeBlob } from '../model/objects';
 import type { Oid, Path, RepoState } from '../model/types';
 import { mergeText } from './merge3';
 
@@ -19,6 +19,8 @@ export function mergeTrees(
   oursFiles: Record<Path, Oid>,
   theirsFiles: Record<Path, Oid>,
   labels: { ours: string; theirs: string },
+  /** false なら blob を書き込まない（マージできるかを調べるだけのとき） */
+  write = true,
 ): TreeMerge {
   const result: Record<Path, Oid> = {};
   const conflictText: Record<Path, string> = {};
@@ -42,7 +44,7 @@ export function mergeTrees(
         conflictText[p] = m.text;
         lines.push(`CONFLICT (${b ? 'content' : 'add/add'}): Merge conflict in ${p}`);
         result[p] = o;
-      } else result[p] = writeBlob(repo, m.text);
+      } else result[p] = write ? writeBlob(repo, m.text) : hashBlob(m.text);
     }
   }
   return { result, conflictText, conflicts, lines };

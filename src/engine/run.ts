@@ -6,9 +6,14 @@ import { GIT_COMMANDS, PLANNED } from './registry';
 import { SHELL } from './shell';
 import type { CommandResult, GitEvent, OutputLine, World } from './model/types';
 
+/** エンジンの外で定義するコマンド（gh など）。シェルコマンドと同じ形 */
+export type ProgramDef = { name: string; run(ctx: Ctx, args: string[]): void };
+
 export type RunOptions = {
   /** レッスンで使ってよい git サブコマンド（未指定なら全部） */
   allowedCommands?: string[];
+  /** 追加のコマンド（模擬 GitHub の gh など。engine は hosting に依存しないので外から渡す） */
+  programs?: Record<string, ProgramDef>;
 };
 
 function distance(a: string, b: string): number {
@@ -74,6 +79,9 @@ export function execute(world: World, line: string, options: RunOptions = {}): C
       throw e;
     }
     runFn = (ctx) => def.run(ctx);
+  } else if (options.programs?.[cmd]) {
+    const def = options.programs[cmd];
+    runFn = (ctx) => def.run(ctx, rest);
   } else if (SHELL[cmd]) {
     const def = SHELL[cmd];
     runFn = (ctx) => def.run(ctx, rest);
