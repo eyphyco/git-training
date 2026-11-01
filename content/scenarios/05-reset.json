@@ -1,0 +1,59 @@
+{
+  "id": "sc-05",
+  "title": "消してはいけないコミットを reset で消した",
+  "level": "advanced",
+  "doc": "05-reset.md",
+  "scenario": { "summary": "指示を取り違えて、今日の作業のコミットを reset --hard で消してしまった。reflog で取り戻し、正しいブランチに移して PR にする。", "members": ["Sato（リーダー）"] },
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n", "app.js": "app()\n" } },
+      { "id": "s1", "parent": "c1", "msg": "add search box", "files": { "search.html": "<input type=search>\n" } },
+      { "id": "s2", "parent": "s1", "msg": "add search api", "files": { "search.js": "get('/search')\n" } }
+    ],
+    "branches": { "main": "s2" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c1" } } },
+    "tracking": { "origin/main": "c1" },
+    "hosting": { "strategy": "github-flow", "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1 }] }
+  },
+  "triggers": [
+    { "id": "ask", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Sato", "text": "main に push されていないコミットが2つありますね。昨日の検索の実験だと思うので、origin/main まで戻して消しておいてください（git reset --hard origin/main）。" }] },
+    { "id": "oops", "when": { "type": "command", "match": "git reset" }, "actions": [{ "type": "message", "from": "Sato", "text": "あっ、ごめんなさい！ 実験は別の PC の話でした。その2コミットは今日の検索機能の作業そのものです……。reflog から取り戻して feature/search ブランチに移し、PR にしてください。main は origin/main のままで大丈夫です。" }] },
+    {
+      "id": "approve",
+      "when": { "type": "event", "event": "PR_OPENED" },
+      "actions": [
+        { "type": "review", "author": "Sato", "state": "approved", "body": "無事でよかった！" },
+        { "type": "message", "from": "Sato", "text": "戻せましたね、助かりました。Approve しておきました。" }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "Sato さんの指示どおり、main を origin/main まで戻そう。",
+      "hints": ["git reset --hard origin/main"],
+      "answer": ["git reset --hard origin/main"],
+      "check": [{ "type": "refEquals", "ref": "main", "to": "c1" }]
+    },
+    {
+      "instruction": "消したコミットは reflog に残っています。`git reflog` で探して、消える前の位置に feature/search ブランチを作ろう（main は動かさない）。",
+      "hints": ["git reflog の HEAD@{1} が reset する前の位置", "git branch <名前> <コミット> で、そのコミットにブランチを作れる", "git branch feature/search HEAD@{1}"],
+      "answer": ["git reflog", "git branch feature/search HEAD@{1}"],
+      "check": [{ "type": "refEquals", "ref": "feature/search", "to": "s2" }, { "type": "refEquals", "ref": "main", "to": "c1" }],
+      "explain": "reset --hard で「見えなくなった」コミットも、しばらくは消えずに残っています。reflog は HEAD が動いた記録なので、その前の位置を指せば取り戻せます。"
+    },
+    {
+      "instruction": "feature/search に切り替えて push し、PR を作ろう。",
+      "hints": ["git switch feature/search", "git push -u origin feature/search", "gh pr create --title \"...\" --body \"...\""],
+      "answer": ["git switch feature/search", "git push -u origin feature/search", "gh pr create --title \"検索機能\" --body \"検索ボックスと API\""],
+      "check": [{ "type": "prState", "head": "feature/search", "state": "open", "approvedBy": "sato" }, { "type": "noViolations" }]
+    },
+    {
+      "type": "quiz",
+      "question": "git reset --hard の後、reflog を使っても取り戻せないものは？",
+      "choices": ["reset の前に指していたコミット", "コミットしていなかった変更（ステージ・ワークツリー）", "別のブランチのコミット"],
+      "answer": 1,
+      "explain": "reflog が記録するのはコミットの位置だけです。コミットしていない変更は reset --hard で消えると戻せません。迷ったら先に git stash か、作業中のコミットを作っておきましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "reset", "reflog", "stash", "fetch", "pull", "push"]
+}

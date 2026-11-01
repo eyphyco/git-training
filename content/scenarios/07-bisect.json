@@ -1,0 +1,66 @@
+{
+  "id": "sc-07",
+  "title": "いつの間にか CI が赤い",
+  "level": "advanced",
+  "doc": "07-bisect.md",
+  "scenario": { "summary": "main の CI が赤いが、いつ壊れたか誰も分からない。確認用のスクリプトを書いて bisect run で原因を見つけ、revert の PR を出す。", "members": ["Sato（リーダー）"] },
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "release 2.3.0", "files": { "README.md": "# Shop\n", "tax.js": "rate = 0.10\n", "price.js": "price()\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add coupon", "files": { "coupon.js": "coupon()\n" } },
+      { "id": "c3", "parent": "c2", "msg": "update readme", "files": { "README.md": "# Shop\n\nCoupons!\n" } },
+      { "id": "c4", "parent": "c3", "msg": "add points", "files": { "points.js": "points()\n" } },
+      { "id": "c5", "parent": "c4", "msg": "refactor price module", "files": { "price.js": "price(rate)\n", "tax.js": "rate = 0.01\n" } },
+      { "id": "c6", "parent": "c5", "msg": "add wishlist", "files": { "wishlist.js": "wishlist()\n" } },
+      { "id": "c7", "parent": "c6", "msg": "fix typo in readme", "files": { "README.md": "# Shop\n\nCoupons and points!\n" } },
+      { "id": "c8", "parent": "c7", "msg": "add gift wrap", "files": { "gift.js": "gift()\n" } }
+    ],
+    "branches": { "main": "c8" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c8" } } },
+    "hosting": {
+      "strategy": "github-flow",
+      "protections": [{ "branch": "main", "requirePullRequest": true, "requiredApprovals": 1 }],
+      "ci": [{ "name": "test", "description": "npm test（税率のテスト）", "failIf": { "path": "tax.js", "contains": "rate = 0.01" } }]
+    }
+  },
+  "triggers": [
+    { "id": "ask", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Sato", "text": "main の CI が赤いです（税率のテストが失敗）。リリース 2.3.0（HEAD~7）の時点では緑でした。tax.js が「rate = 0.10」なら正しいです。bisect で原因のコミットを探してもらえますか？" }] },
+    { "id": "found", "when": { "type": "check", "check": { "type": "bisect", "state": "found" } }, "actions": [{ "type": "message", "from": "Sato", "text": "見つかりましたね！ main は保護されているので、revert/tax ブランチで revert して PR にしてください。" }] },
+    {
+      "id": "approve",
+      "when": { "type": "event", "event": "PR_OPENED" },
+      "actions": [
+        { "type": "review", "author": "Sato", "state": "approved", "body": "CI も緑になりました。" },
+        { "type": "message", "from": "Sato", "text": "Approve しました。merge commit でマージして、ブランチも消してください。" }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "正しいときに 0 で終わる確認用スクリプト check.sh を作り（コミットはしない）、`git bisect start <bad> <good>` で調査を始めよう。",
+      "hints": ["grep -q は見つかれば 0、見つからなければ 1 で終わる", "echo \"grep -q 'rate = 0.10' tax.js\" > check.sh", "git bisect start HEAD HEAD~7"],
+      "answer": ["echo \"grep -q 'rate = 0.10' tax.js\" > check.sh", "git bisect start HEAD HEAD~7"],
+      "check": [{ "type": "bisect", "state": "active" }, { "type": "fileContent", "path": "check.sh", "exists": true }]
+    },
+    {
+      "instruction": "`git bisect run` に check.sh を渡して、原因のコミットを自動で見つけよう。",
+      "hints": ["git bisect run sh check.sh"],
+      "answer": ["git bisect run sh check.sh"],
+      "check": [{ "type": "bisect", "state": "found", "commit": "c5" }],
+      "explain": "コミットされていない check.sh は、bisect がコミットを切り替えてもワークツリーに残るので、どのコミットでも同じテストを流せます。"
+    },
+    {
+      "instruction": "bisect を終わらせ、revert/tax ブランチで原因のコミットを revert して push し、PR を作ろう。",
+      "hints": ["git bisect reset → git switch -c revert/tax", "原因の「refactor price module」は main~3。git revert --no-edit main~3", "git push -u origin revert/tax → gh pr create --title \"...\" --body \"...\""],
+      "answer": ["git bisect reset", "git switch -c revert/tax", "git revert --no-edit main~3", "git push -u origin revert/tax", "gh pr create --title \"税率の不具合を修正\" --body \"refactor price module を revert\""],
+      "check": [{ "type": "bisect", "state": "none" }, { "type": "prState", "head": "revert/tax", "state": "open" }, { "type": "fileContent", "path": "tax.js", "area": "head", "contains": "rate = 0.10" }]
+    },
+    {
+      "instruction": "承認されたら、merge commit でマージしよう。",
+      "hints": ["gh pr merge --merge --delete-branch"],
+      "answer": ["gh pr merge --merge --delete-branch"],
+      "check": [{ "type": "prState", "head": "revert/tax", "state": "merged", "method": "merge" }, { "type": "noViolations" }]
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "bisect", "revert", "fetch", "pull", "push", "restore", "reset", "reflog"]
+}

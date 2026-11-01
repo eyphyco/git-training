@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateAll } from '../src/lesson/checks';
 import { chapters, lessons, scenarios } from '../src/lesson/content';
-import { answerQuiz, checkStep, runAnswer, startSession, toggleCheck } from '../src/lesson/session';
+import { answerQuiz, checkStep, runAnswer, scoreOf, startSession, toggleCheck, type Session } from '../src/lesson/session';
 import glossary from './glossary.json';
 
 const all = Object.values(lessons);
@@ -23,29 +23,39 @@ describe('教材', () => {
   });
 
   it.each(all.map((l) => [l.id, l] as const))('%s の模範解答でクリアできる', (_, lesson) => {
-    let s = startSession(lesson);
-    lesson.steps.forEach((step, i) => {
-      expect(s.stepIndex, `step ${i}`).toBe(i);
-      if (step.type === 'quiz') {
-        expect(step.answer).toBeLessThan(step.choices.length);
-        s = answerQuiz(lesson, s, step.answer).session;
-        return;
-      }
-      if (step.type === 'checklist') {
-        step.items.forEach((_, j) => (s = toggleCheck(lesson, s, j)));
-        return;
-      }
-      // 何もしないうちからクリア済みになっているステップは、課題として成り立っていない
-      expect(evaluateAll(step.check, { world: s.world, aliases: s.aliases, commands: [] }).every((r) => r.ok), `step ${i} は最初から満たされている`).toBe(false);
-      expect(step.answer?.length, `step ${i} に answer がない`).toBeTruthy();
-      expect((step.hints ?? []).length).toBeLessThanOrEqual(3);
-      for (const line of step.answer!) {
-        const r = runAnswer(lesson, s, line);
-        if (!step.expectError) expect(r.result.ok, `${JSON.stringify(line)}\n${r.result.output.map((o) => o.text).join('\n')}`).toBe(true);
-        s = r.session;
-      }
-      expect(s.stepIndex, `step ${i} が未クリア: ${JSON.stringify(checkStep(lesson, s))}`).toBe(i + 1);
-    });
+    const s = playAnswers(lesson);
     expect(s.done).toBe(true);
   });
+
+  it.each(scenarios.map((l) => [l.id, l] as const))('%s は模範解答どおりなら 100 点', (_, lesson) => {
+    expect(scoreOf(playAnswers(lesson), 0)).toEqual({ score: 100, items: [] });
+  });
 });
+
+/** 模範解答を最初のステップから順に実行し、各ステップがクリアになることを確かめる */
+function playAnswers(lesson: (typeof all)[number]): Session {
+  let s = startSession(lesson);
+  lesson.steps.forEach((step, i) => {
+    expect(s.stepIndex, `step ${i}`).toBe(i);
+    if (step.type === 'quiz') {
+      expect(step.answer).toBeLessThan(step.choices.length);
+      s = answerQuiz(lesson, s, step.answer).session;
+      return;
+    }
+    if (step.type === 'checklist') {
+      step.items.forEach((_, j) => (s = toggleCheck(lesson, s, j)));
+      return;
+    }
+    // 何もしないうちからクリア済みになっているステップは、課題として成り立っていない
+    expect(evaluateAll(step.check, { world: s.world, aliases: s.aliases, commands: [] }).every((r) => r.ok), `step ${i} は最初から満たされている`).toBe(false);
+    expect(step.answer?.length, `step ${i} に answer がない`).toBeTruthy();
+    expect((step.hints ?? []).length).toBeLessThanOrEqual(3);
+    for (const line of step.answer!) {
+      const r = runAnswer(lesson, s, line);
+      if (!step.expectError) expect(r.result.ok, `${JSON.stringify(line)}\n${r.result.output.map((o) => o.text).join('\n')}`).toBe(true);
+      s = r.session;
+    }
+    expect(s.stepIndex, `step ${i} が未クリア: ${JSON.stringify(checkStep(lesson, s))}`).toBe(i + 1);
+  });
+  return s;
+}

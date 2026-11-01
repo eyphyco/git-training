@@ -177,5 +177,7 @@ describe('git rebase --autosquash', () => {
     const r = repoWith(fx, ['git rebase --autosquash main']);
     expect(r.ok).toBe(true);
     expect(messages(r.world)).toEqual(['add logout', 'add login', 'init']);
+    // イベントの parents は実行後も読める（Immer の下書きのまま渡さない）
+    expect(r.events.flatMap((e) => (e.type === 'COMMIT_CREATED' ? [e.parents.length] : []))).toEqual([1, 1]);
   });
 });

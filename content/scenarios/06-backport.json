@@ -1,0 +1,49 @@
+{
+  "id": "sc-06",
+  "title": "リリース済みの版にも修正を届ける",
+  "level": "advanced",
+  "doc": "06-backport.md",
+  "scenario": { "summary": "main で直したバグを、サポート中の release/1.x にも cherry-pick -x で移植（backport）し、v1.0.1 を出す。", "members": ["Sato（リーダー）", "Ito（サポート）"] },
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "release 1.0.0", "files": { "README.md": "# Shop\n", "price.js": "version = 1\ntotal = price * 1.01\n" } },
+      { "id": "c2", "parent": "c1", "msg": "start 2.0", "files": { "price.js": "version = 2\ntotal = price * 1.01\n", "cart.js": "cart()\n" } },
+      { "id": "c3", "parent": "c2", "msg": "fix tax rate", "files": { "price.js": "version = 2\ntotal = price * 1.10\n" } }
+    ],
+    "branches": { "main": "c3", "release/1.x": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/shop.git", "branches": { "main": "c3", "release/1.x": "c1" } } }
+  },
+  "triggers": [
+    { "id": "ask", "when": { "type": "start" }, "actions": [{ "type": "message", "from": "Ito", "text": "1.x を使っているお客さんから「税込み価格が安すぎる」と問い合わせです。2.0 はまだ出せないので、1.x にも直しが欲しいです……" }, { "type": "message", "from": "Sato", "text": "main では「fix tax rate」で直してありますね。release/1.x に cherry-pick -x で移植して、v1.0.1 として出しましょう。-x を付けると、どのコミットから持ってきたかが残ります。" }] },
+    { "id": "conflict", "when": { "type": "event", "event": "CONFLICT" }, "actions": [{ "type": "message", "from": "Sato", "text": "コンフリクトしましたね。1行目は 1.x のまま（version = 1）、2行目だけ直した形（total = price * 1.10）にしてください。" }] },
+    { "id": "released", "when": { "type": "check", "check": { "type": "remoteTag", "name": "v1.0.1" } }, "actions": [{ "type": "message", "from": "Ito", "text": "v1.0.1 をお客さんに案内しました。ありがとうございます！" }] }
+  ],
+  "steps": [
+    {
+      "instruction": "release/1.x に切り替えて、main の「fix tax rate」を `-x` 付きで cherry-pick しよう。",
+      "hints": ["git switch release/1.x", "移植したいのは main の先頭のコミット", "git cherry-pick -x main"],
+      "answer": ["git switch release/1.x", "git cherry-pick -x main"],
+      "expectError": true,
+      "check": [{ "type": "inProgress", "op": "cherry-pick" }]
+    },
+    {
+      "instruction": "チャットの指示どおりに price.js のコンフリクトを解消して、cherry-pick を完了させよう。",
+      "hints": ["price.js を「version = 1」「total = price * 1.10」の2行に", "git add price.js", "git cherry-pick --continue"],
+      "answer": ["echo \"version = 1\" > price.js", "echo \"total = price * 1.10\" >> price.js", "git add price.js", "git cherry-pick --continue"],
+      "check": [
+        { "type": "inProgress", "op": null },
+        { "type": "headOn", "branch": "release/1.x" },
+        { "type": "fileContent", "path": "price.js", "area": "head", "equals": "version = 1\ntotal = price * 1.10\n" },
+        { "type": "commitCount", "ref": "release/1.x", "count": 2 }
+      ],
+      "explain": "git log -1 で見ると、メッセージの最後に「(cherry picked from commit …)」が付いています。あとで「この修正は 1.x に入っている？」と聞かれたときに、元のコミットから探せます。"
+    },
+    {
+      "instruction": "release/1.x を push し、注釈付きタグ v1.0.1 を付けて push しよう。",
+      "hints": ["git push", "git tag -a v1.0.1 -m \"...\"", "git push origin v1.0.1"],
+      "answer": ["git push", "git tag -a v1.0.1 -m \"1.0.1: fix tax rate\"", "git push origin v1.0.1"],
+      "check": [{ "type": "remoteEquals", "ref": "release/1.x" }, { "type": "remoteTag", "name": "v1.0.1" }, { "type": "tagExists", "name": "v1.0.1", "annotated": true }]
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "show", "branch", "switch", "cherry-pick", "tag", "fetch", "pull", "push", "restore", "reset", "reflog"]
+}

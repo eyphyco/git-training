@@ -87,7 +87,7 @@ function commitPicked(ctx: Ctx, s: SequenceInProgress, item: TodoItem, tree: Oid
     const combined = s.squash.editMessage ? stripComments(squashTemplate(s.squash.messages)) : s.squash.messages[0].text;
     const oid = writeCommit(repo, { tree, parents: prev.parents, author: prev.author, committer: you(ctx, s.time), message: combined });
     moveHead(ctx, oid, `rebase (${item.action}): ${subject(combined)}`);
-    ctx.emit({ type: 'COMMIT_CREATED', oid, parents: prev.parents, branch: currentBranch(repo), message: combined });
+    ctx.emit({ type: 'COMMIT_CREATED', oid, parents: [...prev.parents], branch: currentBranch(repo), message: combined });
     ctx.emit({ type: 'REF_MOVED', ref: 'HEAD', from: head, to: oid, reason: 'commit' });
     const next = s.todo[0];
     if (next && (next.action === 'squash' || next.action === 'fixup')) return;

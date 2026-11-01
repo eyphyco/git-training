@@ -33,7 +33,7 @@ export function writeHeadCommit(ctx: Ctx, c: HeadCommit): Oid {
   const branch = currentBranch(repo);
   const old = headOid(repo);
   moveHead(ctx, oid, `${c.reflog}: ${subject(c.message)}`);
-  ctx.emit({ type: 'COMMIT_CREATED', oid, parents: c.parents, branch, message: c.message });
+  ctx.emit({ type: 'COMMIT_CREATED', oid, parents: [...c.parents], branch, message: c.message });
   ctx.emit({ type: 'REF_MOVED', ref: branch ?? 'HEAD', from: old, to: oid, reason: 'commit' });
   return oid;
 }
