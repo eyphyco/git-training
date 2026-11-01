@@ -1,0 +1,46 @@
+{
+  "id": "ch01-05",
+  "title": ".gitignore で無視する",
+  "level": "beginner",
+  "doc": "05-gitignore.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "index.js": "require('./lib');\n" } }],
+    "branches": { "main": "c1" },
+    "workingTree": {
+      "lib.js": "module.exports = {};\n",
+      "debug.log": "error at line 3\n",
+      "node_modules/left-pad/index.js": "module.exports = () => {};\n",
+      ".env": "API_KEY=secret-1234\n"
+    }
+  },
+  "steps": [
+    {
+      "instruction": "git status を見てみよう。コミットしたくないファイル（ログ、node_modules、秘密情報の .env）まで未追跡に出ています。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }]
+    },
+    {
+      "instruction": ".gitignore を作って、*.log と node_modules/ と .env を無視させよう。エディタタブで作るか、echo で1行ずつ書き込みます。",
+      "hints": ["echo \"内容\" > ファイル で作成、>> で追記します", "echo \"*.log\" > .gitignore", "続けて echo \"node_modules/\" >> .gitignore と echo \".env\" >> .gitignore"],
+      "answer": ["echo \"*.log\" > .gitignore", "echo \"node_modules/\" >> .gitignore", "echo \".env\" >> .gitignore"],
+      "check": [{ "type": "fileStatus", "path": "debug.log", "status": "ignored" }, { "type": "fileStatus", "path": "node_modules/left-pad/index.js", "status": "ignored" }, { "type": "fileStatus", "path": ".env", "status": "ignored" }],
+      "explain": "エリアビューで3つのファイルが「無視」表示になりました。git status にも出なくなります。"
+    },
+    {
+      "instruction": "git add . で全部ステージに載せ、「add lib and gitignore」でコミットしよう。無視されたファイルは載らないことを確認します。",
+      "hints": ["git add . の . は「このフォルダ全部」", "git add . → git commit -m \"add lib and gitignore\""],
+      "answer": ["git add .", "git commit -m \"add lib and gitignore\""],
+      "check": [{ "type": "fileContent", "path": ".gitignore", "area": "head" }, { "type": "fileContent", "path": "lib.js", "area": "head" }, { "type": "fileContent", "path": ".env", "area": "head", "exists": false }, { "type": "fileContent", "path": "debug.log", "area": "head", "exists": false }],
+      "explain": ".gitignore 自体はコミットしてチームで共有するのが普通です。"
+    },
+    {
+      "type": "quiz",
+      "question": "既にコミットしてしまった .env を .gitignore に書き足すとどうなる？",
+      "choices": ["過去のコミットからも自動で消える", "追跡中のファイルには効かない。git rm --cached で追跡をやめる必要があり、過去の履歴には残る", ".env が削除される"],
+      "answer": 1,
+      "explain": ".gitignore は「未追跡のファイル」にだけ効きます。秘密情報を一度コミットしたら、鍵の無効化（ローテーション）が必須です（第6章の実戦シナリオで扱います）。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "restore", "rm"]
+}

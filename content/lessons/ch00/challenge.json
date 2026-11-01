@@ -1,0 +1,20 @@
+{
+  "id": "ch00-challenge",
+  "title": "章末チャレンジ：用語クイズ10問",
+  "level": "intro",
+  "challenge": true,
+  "setup": { "initialized": false },
+  "steps": [
+    { "type": "quiz", "question": "Q1. プロジェクトのファイルと変更履歴をまとめて保存する場所は？", "choices": ["リポジトリ", "ブランチ", "ワークツリー"], "answer": 0, "explain": "リポジトリには履歴（コミット）がすべて入っています。実体は .git フォルダです。" },
+    { "type": "quiz", "question": "Q2. その時点のプロジェクト全体を記録したスナップショットは？", "choices": ["ステージ", "コミット", "マージ"], "answer": 1 },
+    { "type": "quiz", "question": "Q3. 次のコミットに含める変更を準備しておく場所は？", "choices": ["ワークツリー", "ステージ（インデックス）", "リモート"], "answer": 1, "explain": "git add でステージに載せたものだけが次のコミットに入ります。" },
+    { "type": "quiz", "question": "Q4. 実際にファイルを編集している、手元のフォルダは？", "choices": ["ワークツリー", "ステージ", "HEAD"], "answer": 0 },
+    { "type": "quiz", "question": "Q5. 本流から分かれて並行に作業するための「歴史の枝」は？", "choices": ["タグ", "ブランチ", "リモート"], "answer": 1 },
+    { "type": "quiz", "question": "Q6. 「今自分がいる場所（今のブランチ）」を指す目印は？", "choices": ["main", "origin", "HEAD"], "answer": 2 },
+    { "type": "quiz", "question": "Q7. 別のブランチの変更を今のブランチに取り込む操作は？", "choices": ["マージ", "クローン", "コミット"], "answer": 0 },
+    { "type": "quiz", "question": "Q8. GitHub 上などにある共有リポジトリを一般に何と呼ぶ？", "choices": ["ローカルリポジトリ", "リモートリポジトリ", "ステージ"], "answer": 1 },
+    { "type": "quiz", "question": "Q9. 手元のコミットをリモートに送る操作は？", "choices": ["pull", "push", "fetch"], "answer": 1, "explain": "逆にリモートの変更を取り込むのが pull（= fetch + merge）です。" },
+    { "type": "quiz", "question": "Q10. Git について正しいのは？", "choices": ["ネットに繋がっていないとコミットできない", "全員が履歴の完全なコピーを持つ分散型である", "GitHub の会社が作ったツールである"], "answer": 1, "explain": "Git は Linux の開発者 Linus Torvalds が2005年に作りました。GitHub（2008年〜）とは別物です。" }
+  ],
+  "allowedCommands": []
+}

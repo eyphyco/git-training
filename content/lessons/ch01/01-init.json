@@ -1,0 +1,39 @@
+{
+  "id": "ch01-01",
+  "title": "リポジトリを作る（git init）",
+  "level": "beginner",
+  "doc": "01-init.md",
+  "setup": { "initialized": false, "workingTree": { "README.md": "# My App\n" } },
+  "steps": [
+    {
+      "instruction": "まず ls でフォルダの中身を見てから、git status を実行してみよう。まだ Git リポジトリではないのでエラーになります。",
+      "hints": ["ls はファイル一覧を表示するコマンドです", "git status は「今どうなっているか」を表示します"],
+      "answer": ["ls", "git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "expectError": true,
+      "explain": "「not a git repository」＝ここはまだ Git の管理下ではない、という意味です。"
+    },
+    {
+      "instruction": "git init でこのフォルダを Git リポジトリにしよう。",
+      "hints": ["init は initialize（初期化）の略です", "git init"],
+      "answer": ["git init"],
+      "check": [{ "type": "repoInitialized" }],
+      "explain": "隠しフォルダ .git が作られました。ここに履歴がすべて保存されます。グラフに HEAD → main が出たことにも注目しましょう（まだコミットはありません）。"
+    },
+    {
+      "instruction": "もう一度 git status を実行し、README.md がどう表示されるか確かめよう。",
+      "hints": ["同じコマンドをもう一度。↑キーで前のコマンドを呼び出せます"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "explain": "README.md は「Untracked files（未追跡）」に出ます。Git はまだこのファイルを管理していません。"
+    },
+    {
+      "instruction": "コミットに記録される名前を設定しよう。git config user.name \"あなたの名前\" を実行します。",
+      "hints": ["名前にスペースを含むときは \" \" で囲みます", "git config user.name \"Phyco\""],
+      "answer": ["git config user.name \"Phyco\""],
+      "check": [{ "type": "configEquals", "key": "user.name" }],
+      "explain": "実際の PC では最初に1回だけ git config --global user.name と user.email を設定します。"
+    }
+  ],
+  "allowedCommands": ["init", "status", "config"]
+}

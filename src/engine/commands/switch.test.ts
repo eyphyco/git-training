@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { Setup } from '../world';
 import { execute } from '../run';
 import { repoWith, text } from '../testing';
 
-const setup = {
+const setup: Setup = {
   commits: [
     { id: 'c1', msg: 'init', files: { a: '1\n' } },
     { id: 'c2', parent: 'c1', msg: 'login', files: { 'login.ts': 'x\n' } },

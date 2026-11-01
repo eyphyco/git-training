@@ -1,0 +1,35 @@
+{
+  "id": "ch01-challenge",
+  "title": "章末チャレンジ：指定どおりのコミット3つを作る",
+  "level": "beginner",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "initialized": false,
+    "workingTree": { "README.md": "# Portfolio\n", "index.html": "<h1>Portfolio</h1>\n", "style.css": "h1 { color: navy; }\n", "secret.txt": "password=1234\n" }
+  },
+  "steps": [
+    {
+      "instruction": "リポジトリを作り、次の3つのコミットを順番に作ろう。\n1.「add README」… README.md だけ\n2.「add page」… index.html と style.css\n3.「ignore secret」… secret.txt を無視する .gitignore\nsecret.txt は絶対にコミットしないこと。最後は git status がクリーン（未追跡なし）になっていること。",
+      "hints": ["最初は git init。1つ目は git add README.md → git commit", "2つ目は2ファイルを add してから commit", "3つ目は echo \"secret.txt\" > .gitignore を作って add → commit"],
+      "answer": [
+        "git init",
+        "git add README.md",
+        "git commit -m \"add README\"",
+        "git add index.html style.css",
+        "git commit -m \"add page\"",
+        "echo \"secret.txt\" > .gitignore",
+        "git add .gitignore",
+        "git commit -m \"ignore secret\""
+      ],
+      "check": [
+        { "type": "graphShape", "expected": { "commits": [{ "msg": "add README" }, { "msg": "add page", "parents": ["add README"] }, { "msg": "ignore secret", "parents": ["add page"] }], "branches": { "main": "ignore secret" } } },
+        { "type": "fileContent", "path": "style.css", "area": "head" },
+        { "type": "fileContent", "path": "secret.txt", "area": "head", "exists": false },
+        { "type": "statusClean" }
+      ],
+      "explain": "クリア！ add で「何をコミットするか」を選び、.gitignore で「入れてはいけないもの」を守れました。"
+    }
+  ],
+  "allowedCommands": ["init", "config", "status", "add", "commit", "log", "diff", "restore", "rm"]
+}

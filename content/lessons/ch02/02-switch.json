@@ -1,0 +1,43 @@
+{
+  "id": "ch02-02",
+  "title": "switch でブランチを移動する",
+  "level": "beginner",
+  "doc": "02-switch.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add top page", "files": { "index.html": "<h1>Shop</h1>\n" } }
+    ],
+    "branches": { "main": "c2", "feature": "c2" }
+  },
+  "steps": [
+    {
+      "instruction": "feature ブランチに移動しよう。HEAD のラベルが動くのを見てください。",
+      "hints": ["git switch <ブランチ名>", "git switch feature"],
+      "answer": ["git switch feature"],
+      "check": [{ "type": "headOn", "branch": "feature" }]
+    },
+    {
+      "instruction": "login.html を作ってコミットしよう（メッセージは「add login page」）。feature だけが前に進むことを確認します。",
+      "hints": ["echo \"<form>login</form>\" > login.html でファイルを作れます", "git add login.html → git commit -m \"add login page\""],
+      "answer": ["echo \"<form>login</form>\" > login.html", "git add login.html", "git commit -m \"add login page\""],
+      "check": [{ "type": "commitCount", "ref": "feature", "count": 3 }, { "type": "refEquals", "ref": "main", "to": "c2" }],
+      "explain": "HEAD が feature を指していたので、feature の名札だけが新しいコミットへ動きました。main は元の位置のままです。"
+    },
+    {
+      "instruction": "main に戻ろう。エリアビューで login.html がどうなるか注目してください。",
+      "hints": ["git switch main"],
+      "answer": ["git switch main"],
+      "check": [{ "type": "headOn", "branch": "main" }, { "type": "fileContent", "path": "login.html", "exists": false }],
+      "explain": "login.html が消えたように見えますが、feature のコミットにちゃんと残っています。switch はワークツリーを「そのブランチの最新コミットの状態」に入れ替えます。"
+    },
+    {
+      "instruction": "作成と移動を一度にやってみよう。git switch -c hotfix で hotfix ブランチを作って移動します。",
+      "hints": ["-c は create（作成）", "git switch -c hotfix"],
+      "answer": ["git switch -c hotfix"],
+      "check": [{ "type": "headOn", "branch": "hotfix" }, { "type": "refEquals", "ref": "hotfix", "to": "c2" }],
+      "explain": "git switch -c は git branch + git switch を一度に行います。古い書き方では git checkout -b です。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "branch", "switch", "checkout"]
+}

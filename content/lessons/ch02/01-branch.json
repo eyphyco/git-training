@@ -1,0 +1,37 @@
+{
+  "id": "ch02-01",
+  "title": "ブランチを作る",
+  "level": "beginner",
+  "doc": "01-branch.md",
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add top page", "files": { "index.html": "<h1>Shop</h1>\n" } }
+    ],
+    "branches": { "main": "c2" }
+  },
+  "steps": [
+    {
+      "instruction": "feature という名前のブランチを作ろう。グラフに新しいラベルが付くのを見てください。",
+      "hints": ["git branch <名前> でブランチを作ります", "git branch feature"],
+      "answer": ["git branch feature"],
+      "check": [{ "type": "branchExists", "name": "feature" }, { "type": "refEquals", "ref": "feature", "to": "c2" }],
+      "explain": "ブランチは「コミットを指す名札」にすぎません。作っても新しいコミットはできず、今のコミットに名札が1枚増えただけです。"
+    },
+    {
+      "instruction": "git branch（名前なし）でブランチ一覧を表示しよう。",
+      "hints": ["git branch"],
+      "answer": ["git branch"],
+      "check": [{ "type": "commandUsed", "command": "git branch" }],
+      "explain": "* が付いているのが今いるブランチ（HEAD が指しているブランチ）です。"
+    },
+    {
+      "type": "quiz",
+      "question": "git branch feature を実行した後、HEAD はどこを指している？",
+      "choices": ["feature", "main", "どこも指していない"],
+      "answer": 1,
+      "explain": "git branch は作るだけで移動しません。移動は次のレッスンの git switch で行います。"
+    }
+  ],
+  "allowedCommands": ["status", "log", "branch"]
+}

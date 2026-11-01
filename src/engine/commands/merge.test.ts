@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { Setup } from '../world';
 import { execute } from '../run';
 import { getCommit } from '../model/objects';
 import { repoWith, text } from '../testing';
 
-const ff = {
+const ff: Setup = {
   commits: [
     { id: 'c1', msg: 'init', files: { 'README.md': '# app\n' } },
     { id: 'c2', parent: 'c1', msg: 'add login', files: { 'login.ts': 'login\n' } },
@@ -11,7 +12,7 @@ const ff = {
   branches: { main: 'c1', 'feature/login': 'c2' },
 };
 
-const diverged = (theirs: string) => ({
+const diverged = (theirs: string): Setup => ({
   commits: [
     { id: 'c1', msg: 'init', files: { 'a.txt': 'one\ntwo\nthree\n' } },
     { id: 'c2', parent: 'c1', msg: 'ours', files: { 'a.txt': 'ONE\ntwo\nthree\n' } },

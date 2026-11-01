@@ -1,0 +1,44 @@
+{
+  "id": "ch02-challenge",
+  "title": "章末チャレンジ：グラフをお手本と同じ形にする",
+  "level": "beginner",
+  "challenge": true,
+  "doc": "challenge.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Blog\n" } }],
+    "branches": { "main": "c1" }
+  },
+  "steps": [
+    {
+      "instruction": "お手本のグラフと同じ形にしよう。\n・feature ブランチで「add post」コミット（post.md を追加）\n・main で「update readme」コミット\n・最後に main で feature をマージ（マージコミットのメッセージは既定のまま）\n・feature ブランチは残しておく",
+      "hints": ["git switch -c feature で作って移動し、ファイルを作って add → commit", "git switch main で戻って README.md を書き換えて commit", "git merge feature"],
+      "answer": [
+        "git switch -c feature",
+        "echo \"# 初めての投稿\" > post.md",
+        "git add post.md",
+        "git commit -m \"add post\"",
+        "git switch main",
+        "echo \"ブログです\" >> README.md",
+        "git commit -am \"update readme\"",
+        "git merge feature"
+      ],
+      "check": [
+        {
+          "type": "graphShape",
+          "expected": {
+            "commits": [
+              { "msg": "init" },
+              { "msg": "add post", "parents": ["init"] },
+              { "msg": "update readme", "parents": ["init"] },
+              { "msg": "Merge branch 'feature'", "parents": ["update readme", "add post"] }
+            ],
+            "branches": { "main": "Merge branch 'feature'", "feature": "add post" },
+            "head": "main"
+          }
+        }
+      ],
+      "explain": "クリア！ ブランチで並行作業し、3-way マージで合流させる流れはチーム開発の基本形です。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "restore", "branch", "switch", "checkout", "merge"]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "ch01-02",
+  "title": "add と commit",
+  "level": "beginner",
+  "doc": "02-add-commit.md",
+  "setup": { "workingTree": { "README.md": "# My App\n", "index.html": "<h1>Hello</h1>\n" } },
+  "steps": [
+    {
+      "instruction": "README.md だけをステージに載せよう（git add README.md）。エリアビューでファイルが移動するのを見てください。",
+      "hints": ["git add <ファイル名> でステージに載せます", "git add README.md"],
+      "answer": ["git add README.md"],
+      "check": [{ "type": "fileStatus", "path": "README.md", "status": "staged" }, { "type": "fileStatus", "path": "index.html", "status": "untracked" }],
+      "explain": "README.md が「ステージ」列に入りました。index.html はまだワークツリーにあるだけです。"
+    },
+    {
+      "instruction": "git status で、README.md と index.html の表示の違いを確かめよう。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }],
+      "explain": "緑の「Changes to be committed」が次のコミットに入るもの、赤の「Untracked files」は入らないものです。"
+    },
+    {
+      "instruction": "メッセージ「add README」でコミットしよう。",
+      "hints": ["-m でメッセージを指定します", "git commit -m \"メッセージ\"", "git commit -m \"add README\""],
+      "answer": ["git commit -m \"add README\""],
+      "check": [{ "type": "commitCount", "ref": "main", "count": 1 }, { "type": "fileContent", "path": "README.md", "area": "head", "contains": "My App" }, { "type": "fileContent", "path": "index.html", "area": "head", "exists": false }],
+      "explain": "グラフに最初のコミットが現れ、main と HEAD がそれを指しました。ステージに載せた README.md だけが記録されています。"
+    },
+    {
+      "instruction": "index.html もステージに載せて「add index.html」というメッセージでコミットしよう。",
+      "hints": ["add → commit の2ステップです", "git add index.html → git commit -m \"add index.html\""],
+      "answer": ["git add index.html", "git commit -m \"add index.html\""],
+      "check": [{ "type": "commitCount", "ref": "main", "count": 2 }, { "type": "statusClean" }],
+      "explain": "2つ目のコミットは1つ目を「親」として指しています。これが Git の歴史の正体です。"
+    },
+    {
+      "type": "quiz",
+      "question": "git add を省いて、いきなり git commit -m \"...\" するとどうなる？",
+      "choices": ["ワークツリーの全ファイルがコミットされる", "ステージに何もなければ「nothing added to commit」でコミットされない", "エラーで Git が壊れる"],
+      "answer": 1,
+      "explain": "コミットに入るのはステージの内容だけです。だから「何をコミットするか」を add で選べます。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log"]
+}

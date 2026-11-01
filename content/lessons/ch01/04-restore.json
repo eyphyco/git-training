@@ -1,0 +1,42 @@
+{
+  "id": "ch01-04",
+  "title": "restore で変更を取り消す",
+  "level": "beginner",
+  "doc": "04-restore.md",
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "add app", "files": { "app.js": "console.log('hello');\n", "notes.txt": "メモ\n" } }],
+    "branches": { "main": "c1" },
+    "workingTree": { "app.js": "console.log('hello');\nこわれたコード!!!\n" },
+    "staged": { "notes.txt": "メモ\nまだコミットしたくない行\n" }
+  },
+  "steps": [
+    {
+      "instruction": "git status で状況を確認しよう。app.js は未ステージの変更、notes.txt はステージ済みの変更があります。",
+      "hints": ["git status"],
+      "answer": ["git status"],
+      "check": [{ "type": "commandUsed", "command": "git status" }]
+    },
+    {
+      "instruction": "app.js の壊れた変更を捨てて、最後にコミットした状態に戻そう。",
+      "hints": ["status の出力に「use \"git restore <file>...\" to discard changes」と書いてあります", "git restore app.js"],
+      "answer": ["git restore app.js"],
+      "check": [{ "type": "fileContent", "path": "app.js", "equals": "console.log('hello');\n" }],
+      "explain": "ワークツリーの app.js がステージ（= 最後のコミット）の内容で上書きされました。⚠️ 捨てた変更は Git でも取り戻せません。"
+    },
+    {
+      "instruction": "notes.txt をステージから外そう（ファイルの中身は残したまま）。",
+      "hints": ["--staged を付けると「ステージだけ」戻します", "git restore --staged notes.txt"],
+      "answer": ["git restore --staged notes.txt"],
+      "check": [{ "type": "fileStatus", "path": "notes.txt", "status": "modified" }, { "type": "fileContent", "path": "notes.txt", "contains": "まだコミットしたくない行" }],
+      "explain": "ステージからは外れましたが、ワークツリーの編集内容はそのまま残っています。"
+    },
+    {
+      "type": "quiz",
+      "question": "git restore notes.txt（--staged なし）をこの後に実行するとどうなる？",
+      "choices": ["何も起きない", "ワークツリーの notes.txt の変更が消える", "notes.txt がコミットされる"],
+      "answer": 1,
+      "explain": "--staged なしの restore はワークツリーを上書きします。消してよい変更か確認してから使いましょう。"
+    }
+  ],
+  "allowedCommands": ["status", "add", "commit", "log", "diff", "restore"]
+}
