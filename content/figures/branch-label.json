@@ -1,0 +1,19 @@
+{
+  "id": "branch-label",
+  "title": "ブランチは動く名札",
+  "show": ["graph"],
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add top page", "files": { "index.html": "<h1>Shop</h1>\n" } }
+    ],
+    "branches": { "main": "c2" }
+  },
+  "intro": "HEAD → main が最新のコミットを指しています。",
+  "steps": [
+    { "commands": ["git branch feature"], "caption": "git branch で、同じコミットに名札 feature が1枚増えただけ。HEAD は main のまま。" },
+    { "commands": ["git switch feature"], "caption": "git switch で HEAD が feature に移りました。" },
+    { "commands": ["echo \"<form>login</form>\" > login.html", "git add .", "git commit -m \"add login\""], "caption": "コミットすると、HEAD が指している feature の名札だけが新しいコミットへ進みます。main は動きません。" },
+    { "commands": ["git switch main", "git merge feature"], "caption": "main で feature をマージ。main に新しいコミットがないので、名札を前に進めるだけ（fast-forward）。" }
+  ]
+}

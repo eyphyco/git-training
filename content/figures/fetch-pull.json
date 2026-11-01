@@ -1,0 +1,16 @@
+{
+  "id": "fetch-pull",
+  "title": "fetch と pull",
+  "show": ["areas", "graph"],
+  "setup": {
+    "commits": [{ "id": "c1", "msg": "init", "files": { "README.md": "# Team App\n" } }],
+    "branches": { "main": "c1" },
+    "remotes": { "origin": { "url": "https://github.com/team/app.git", "branches": { "main": "c1" } } }
+  },
+  "intro": "手元の main と origin/main、GitHub の main が同じ位置です。",
+  "steps": [
+    { "teammatePush": { "author": "Sato", "message": "add footer", "files": { "footer.html": "<footer>Team</footer>\n" } }, "caption": "Sato さんが GitHub に push。リモート列の main だけが進み、手元のグラフはまだ何も知りません。" },
+    { "commands": ["git fetch"], "caption": "fetch すると手元の origin/main が進みました。自分の main とワークツリーはそのまま。" },
+    { "commands": ["git merge origin/main"], "caption": "origin/main を取り込むと main が追いつきます。fetch と merge をまとめて行うのが git pull です。" }
+  ]
+}

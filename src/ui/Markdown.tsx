@@ -1,6 +1,8 @@
 // 解説 Markdown の表示。[[id]] / [[id|表示名]] を用語のホバー解説に変える。
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { splitFigures } from '../lesson/figures';
+import { Figure } from './Figure';
 import { Term } from './glossary';
 
 const TERM = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
@@ -10,6 +12,14 @@ export function preprocess(md: string): string {
 }
 
 export function Markdown({ text, inline }: { text: string; inline?: boolean }) {
+  // 解説の中の :::figure{id="..."} の行は、動く図解に置き換える
+  const parts = inline ? null : splitFigures(text);
+  if (parts && parts.some((p) => p.kind === 'figure'))
+    return (
+      <>
+        {parts.map((p, i) => (p.kind === 'figure' ? <Figure key={i} id={p.id} /> : <Markdown key={i} text={p.text} inline={false} />))}
+      </>
+    );
   return (
     <div className={inline ? 'prose-lesson [&>p]:my-0' : 'prose-lesson'}>
       <ReactMarkdown

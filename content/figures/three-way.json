@@ -1,0 +1,17 @@
+{
+  "id": "three-way",
+  "title": "3-way マージ",
+  "show": ["graph"],
+  "setup": {
+    "commits": [
+      { "id": "c1", "msg": "init", "files": { "README.md": "# Shop\n" } },
+      { "id": "c2", "parent": "c1", "msg": "add cart", "files": { "cart.js": "export const cart = [];\n" } }
+    ],
+    "branches": { "main": "c1", "feature/cart": "c2" }
+  },
+  "intro": "feature/cart が main より1つ先に進んでいます。",
+  "steps": [
+    { "commands": ["echo \"オンラインショップです\" >> README.md", "git commit -am \"update readme\""], "caption": "main にもコミット。2本の歴史が c1 から枝分かれしました。もう fast-forward はできません。" },
+    { "commands": ["git merge feature/cart"], "caption": "共通の祖先・main・feature/cart の3点を比べて混ぜ、親を2つ持つマージコミットができました。" }
+  ]
+}
