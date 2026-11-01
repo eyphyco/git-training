@@ -15,12 +15,14 @@ import { merge } from './commands/merge';
 import { pull } from './commands/pull';
 import { push } from './commands/push';
 import { rebase } from './commands/rebase';
+import { reflog } from './commands/reflog';
 import { remote } from './commands/remote';
 import { reset } from './commands/reset';
 import { restore } from './commands/restore';
 import { revert } from './commands/revert';
 import { rm } from './commands/rm';
 import { show } from './commands/show';
+import { stash } from './commands/stash';
 import { status } from './commands/status';
 import { tag } from './commands/tag';
 import { switchCmd } from './commands/switch';
@@ -50,12 +52,12 @@ export const GIT_COMMANDS: Record<string, CommandDef> = {
   rebase,
   show,
   tag,
+  stash,
+  reflog,
 };
 
 /** 実 Git にはあるが、このフェーズではまだ動かないコマンド → 何章で扱うか */
 export const PLANNED: Record<string, string> = {
-  stash: '第6章',
-  reflog: '第6章',
   bisect: '第8章',
   worktree: '第8章',
   mv: '今後',
